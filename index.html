@@ -20,35 +20,25 @@
       --shadow: 0 2px 8px 0 rgba(0,0,0,0.11);
     }
     body {
-      font-family: 'Montserrat', Arial, sans-serif;
       background: var(--bg-main);
       color: var(--text-main);
+      font-family: 'Montserrat', Arial, sans-serif;
       margin: 0;
       padding: 0;
-      letter-spacing: 0.02em;
     }
-    main { max-width: 1200px; margin: auto; padding: 20px; }
-    h1 { text-align: center; margin-bottom: 10px; letter-spacing: 0.06em;}
-    section {
-      margin-top: 30px;
-      background: var(--bg-section);
-      padding: 24px;
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      transition: box-shadow 0.2s;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 18px;
-    }
-    button {
-      padding: 12px;
-      background: var(--accent);
-      color: #222;
-      border: none;
-      border-radius: 6px;
+    main { max-width: 950px; margin: 0 auto; padding: 15px; }
+    header { text-align: center; padding: 22px 0 10px 0; }
+    h1,h2 { font-weight: 700; }
+    section { background: var(--bg-section); margin: 14px 0; border-radius: 10px; padding: 18px; box-shadow: var(--shadow);}
+    button, select {
       font-family: inherit;
+      font-size: 1em;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      padding: 8px 18px;
+      background: var(--accent);
+      color: #111;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s, color 0.2s, box-shadow 0.2s;
@@ -230,7 +220,12 @@
       heroesOwned: [1],
       currentMap: maps[0].name,
       heroMissions: {}, // heroId: {missionId, timeLeft, inProgress}
-      incomeBoost: 1
+      incomeBoost: 1,
+      missionBoost: 1,
+      techBoost: 1,
+      magicBoost: 1,
+      strengthBoost: 1,
+      speedBoost: 1
     };
 
     // --- UI elements ---
@@ -276,73 +271,53 @@
         cost: 10000,
         purchased: false,
         apply(player) { player.incomeBoost *= 1.50; }
+      },
+      {
+        id: 4,
+        name: "Mission Rewards +20%",
+        desc: "Earn 20% more money from missions.",
+        cost: 20000,
+        purchased: false,
+        apply(player) { player.missionBoost *= 1.20; }
+      },
+      {
+        id: 5,
+        name: "Tech Class Power",
+        desc: "Tech class heroes earn double.",
+        cost: 25000,
+        purchased: false,
+        apply(player) { player.techBoost = 2; }
+      },
+      {
+        id: 6,
+        name: "Magic Class Power",
+        desc: "Magic class heroes earn double.",
+        cost: 25000,
+        purchased: false,
+        apply(player) { player.magicBoost = 2; }
+      },
+      {
+        id: 7,
+        name: "Strength Class Power",
+        desc: "Strength class heroes earn double.",
+        cost: 25000,
+        purchased: false,
+        apply(player) { player.strengthBoost = 2; }
+      },
+      {
+        id: 8,
+        name: "Speed Class Power",
+        desc: "Speed class heroes earn double.",
+        cost: 25000,
+        purchased: false,
+        apply(player) { player.speedBoost = 2; }
       }
     ];
 
-    function updateLabUI() {
-      upgradeListEl.innerHTML = '';
-      upgrades.forEach(upg => {
-        const div = document.createElement('div');
-        div.className = 'upgrade-item';
-        div.innerHTML = `<strong>${upg.name}</strong><br>
-          <span style="font-size:0.95em">${upg.desc}</span><br>
-          Cost: $${upg.cost}<br>
-          <button ${upg.purchased || player.money < upg.cost ? 'disabled' : ''}>
-            ${upg.purchased ? 'Purchased' : 'Buy'}
-          </button>`;
-        div.querySelector('button').onclick = function() {
-          if (player.money >= upg.cost && !upg.purchased) {
-            player.money -= upg.cost;
-            upg.purchased = true;
-            upg.apply(player);
-            addLog(`Research purchased: ${upg.name}`);
-            updateAll();
-          }
-        };
-        upgradeListEl.appendChild(div);
-      });
+    // --- Utility functions ---
+    function addLog(msg) {
+      logContentEl.innerHTML = `<div>${msg}</div>` + logContentEl.innerHTML;
     }
-
-    function xpToNextLevel(level) {
-      return 100 + (level - 1) * 50;
-    }
-    function addLog(text) {
-      const p = document.createElement('p');
-      p.textContent = text;
-      logContentEl.appendChild(p);
-      logContentEl.scrollTop = logContentEl.scrollHeight;
-    }
-
-    saveBtn.onclick = function() {
-      localStorage.setItem('idle-superhero-save', JSON.stringify(player));
-      addLog('Game saved!');
-    };
-    function safeLoad() {
-      try {
-        const data = localStorage.getItem('idle-superhero-save');
-        if (data) {
-          const parsed = JSON.parse(data);
-          if (typeof parsed === "object" && parsed.level && parsed.heroesOwned) {
-            player = parsed;
-            // Patch: if old saves lack incomeBoost, set it to 1
-            if (!player.incomeBoost) player.incomeBoost = 1;
-            addLog('Game loaded!');
-            updateAll();
-          } else {
-            addLog('Save data corrupted.');
-          }
-        } else addLog('No save found.');
-      } catch (e) {
-        addLog('Error loading save data.');
-      }
-    }
-    loadBtn.onclick = safeLoad;
-    resetBtn.onclick = function() {
-      if (confirm('Reset your progress?')) {
-        localStorage.removeItem('idle-superhero-save');
-        location.reload();
-      }
-    };
 
     function updatePlayerUI() {
       levelEl.textContent = player.level;
@@ -351,25 +326,33 @@
       moneyEl.textContent = player.money.toFixed(2);
       currentMapEl.textContent = player.currentMap;
     }
+
     function updateHeroesUI() {
       heroesListEl.innerHTML = '';
       let totalMps = 0;
       player.heroesOwned.forEach((id) => {
         const hero = heroes.find(h => h.id === id);
         if (!hero) return;
-        totalMps += hero.mps;
+        // Apply per-class boosts:
+        let classBoost = 1;
+        if (hero.class === "Tech") classBoost = player.techBoost || 1;
+        if (hero.class === "Magic") classBoost = player.magicBoost || 1;
+        if (hero.class === "Strength") classBoost = player.strengthBoost || 1;
+        if (hero.class === "Speed") classBoost = player.speedBoost || 1;
+        totalMps += hero.mps * classBoost;
         const div = document.createElement('div');
         div.className = 'hero';
         div.innerHTML = `<strong>${hero.name}</strong><br>
           <span class="class ${hero.class.toLowerCase()}">${hero.class}</span><br>
           Map: ${hero.map}<br>
-          MPS: $${hero.mps}`;
+          MPS: $${(hero.mps * classBoost).toFixed(2)}`;
         heroesListEl.appendChild(div);
       });
       // Apply upgrade boost
       const boost = player.incomeBoost || 1;
       totalMpsEl.textContent = (totalMps * boost).toFixed(2);
     }
+
     classFilterEl.onchange = updateShopUI;
     function updateShopUI() {
       shopHeroesEl.innerHTML = '';
@@ -403,6 +386,7 @@
         shopHeroesEl.appendChild(div);
       });
     }
+
     function updateMapButtonsUI() {
       mapButtonsEl.innerHTML = '';
       maps.forEach(map => {
@@ -421,6 +405,7 @@
         mapButtonsEl.appendChild(btn);
       });
     }
+
     function updateMissionsUI() {
       missionsListEl.innerHTML = '';
       player.heroesOwned.forEach(heroId => {
@@ -468,6 +453,35 @@
         missionsListEl.appendChild(div);
       });
     }
+
+    function updateLabUI() {
+      upgradeListEl.innerHTML = '';
+      upgrades.forEach(upg => {
+        const div = document.createElement('div');
+        div.className = 'upgrade-item';
+        div.innerHTML = `<strong>${upg.name}</strong><br>
+          <span style="font-size:0.95em">${upg.desc}</span><br>
+          Cost: $${upg.cost}<br>
+          <button ${upg.purchased || player.money < upg.cost ? 'disabled' : ''}>
+            ${upg.purchased ? 'Purchased' : 'Buy'}
+          </button>`;
+        div.querySelector('button').onclick = function() {
+          if (player.money >= upg.cost && !upg.purchased) {
+            player.money -= upg.cost;
+            upg.purchased = true;
+            upg.apply(player);
+            addLog(`Research purchased: ${upg.name}`);
+            updateAll();
+          }
+        };
+        upgradeListEl.appendChild(div);
+      });
+    }
+
+    function xpToNextLevel(level) {
+      return 100 + (level - 1) * 50;
+    }
+
     function updateAll() {
       updatePlayerUI();
       updateHeroesUI();
@@ -476,12 +490,19 @@
       updateMissionsUI();
       updateLabUI();
     }
+
     // Hero income (idle)
     setInterval(() => {
       let totalMps = 0;
       player.heroesOwned.forEach(id => {
         const hero = heroes.find(h => h.id === id);
-        if (hero) totalMps += hero.mps;
+        if (!hero) return;
+        let classBoost = 1;
+        if (hero.class === "Tech") classBoost = player.techBoost || 1;
+        if (hero.class === "Magic") classBoost = player.magicBoost || 1;
+        if (hero.class === "Strength") classBoost = player.strengthBoost || 1;
+        if (hero.class === "Speed") classBoost = player.speedBoost || 1;
+        totalMps += hero.mps * classBoost;
       });
       // Apply upgrade boost
       const boost = player.incomeBoost || 1;
@@ -501,9 +522,10 @@
         if (assign.timeLeft <= 0) {
           assign.inProgress = false;
           const base = missions.find(m=>m.id===assign.missionId);
-          player.money += base.moneyReward;
+          let missionMoney = base.moneyReward * (player.missionBoost || 1);
+          player.money += missionMoney;
           player.xp += base.xpReward;
-          addLog(`${heroes.find(h=>h.id===heroId).name} finished ${base.name}! +$${base.moneyReward}, +${base.xpReward} XP`);
+          addLog(`${heroes.find(h=>h.id===heroId).name} finished ${base.name}! +$${missionMoney.toFixed(2)}, +${base.xpReward} XP`);
           assign.missionId = null;
           checkLevelUp();
           updateAll();
@@ -513,6 +535,7 @@
       }
       tick();
     }
+
     function checkLevelUp() {
       let nextLevelXp = xpToNextLevel(player.level);
       while (player.xp >= nextLevelXp) {
@@ -526,6 +549,29 @@
       }
       updatePlayerUI();
     }
+
+    // Save/load/reset
+    saveBtn.onclick = function() {
+      localStorage.setItem('idle-superhero-save', JSON.stringify(player));
+      addLog('Game saved!');
+    };
+    loadBtn.onclick = function() {
+      const data = localStorage.getItem('idle-superhero-save');
+      if (data) {
+        Object.assign(player, JSON.parse(data));
+        addLog('Game loaded!');
+        updateAll();
+      } else {
+        addLog('No saved game found.');
+      }
+    };
+    resetBtn.onclick = function() {
+      if (confirm('Reset your progress?')) {
+        localStorage.removeItem('idle-superhero-save');
+        location.reload();
+      }
+    };
+
     function init() {
       updateAll();
       addLog('Welcome to Idle Superhero Tycoon! Assign each hero to a mission.');
