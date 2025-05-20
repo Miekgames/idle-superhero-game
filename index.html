@@ -3,396 +3,419 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Idle Superhero Tycoon game. Collect, upgrade, and assign heroes of different classes to missions!" />
   <title>Idle Superhero Tycoon</title>
   <style>
-    body { font-family: sans-serif; background: #111; color: white; margin: 0; padding: 0; }
-    .container { max-width: 1200px; margin: auto; padding: 20px; }
+    :root {
+      --tech-color: #4fc3f7;
+      --magic-color: #ba68c8;
+      --strength-color: #ff7043;
+      --speed-color: #aed581;
+      --bg-main: #111;
+      --bg-section: #222;
+      --bg-card: #333;
+      --text-main: #fff;
+    }
+    body { font-family: sans-serif; background: var(--bg-main); color: var(--text-main); margin: 0; padding: 0; }
+    main { max-width: 1200px; margin: auto; padding: 20px; }
     h1 { text-align: center; margin-bottom: 10px; }
-    .section { margin-top: 30px; background: #222; padding: 20px; border-radius: 10px; }
+    section { margin-top: 30px; background: var(--bg-section); padding: 20px; border-radius: 10px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
     button { padding: 10px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #666; }
-    .hero, .mission, .shop-item, .gacha-result, .map-button { background: #333; padding: 10px; border-radius: 10px; text-align: center; }
+    button:hover:not(:disabled) { background: #666; }
+    .hero, .mission, .shop-item, .gacha-result, .map-button {
+      background: var(--bg-card); padding: 10px; border-radius: 10px; text-align: center;
+    }
     .locked { opacity: 0.4; cursor: not-allowed; }
-    #log-content { max-height: 200px; overflow-y: auto; background: #111; padding: 10px; border-radius: 5px; }
-    #mission-status { margin-top: 10px; min-height: 24px; }
-    select, #start-mission, #buy-gacha { margin-top: 10px; }
+    #log-content { max-height: 200px; overflow-y: auto; background: var(--bg-main); padding: 10px; border-radius: 5px; }
     .hero-assignment { margin-top: 10px; }
     .save-load-btn { margin: 5px 10px 5px 0; }
+    .class { font-weight: bold; display: inline-block; min-width: 65px; }
+    .class.tech { color: var(--tech-color); }
+    .class.magic { color: var(--magic-color); }
+    .class.strength { color: var(--strength-color); }
+    .class.speed { color: var(--speed-color); }
+    label[for], select, #start-mission, #buy-gacha { margin-top: 10px; }
+    @media (max-width: 600px) {
+      main { padding: 5px; }
+      section { padding: 10px; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Idle Superhero Tycoon</h1>
-
-    <div class="section" id="player-stats">
-      <h2>Player Stats</h2>
+  <main>
+    <header>
+      <h1>Idle Superhero Tycoon</h1>
+    </header>
+    <section aria-labelledby="player-stats-title" id="player-stats">
+      <h2 id="player-stats-title">Player Stats</h2>
       <p>Level: <span id="level">1</span></p>
       <p>XP: <span id="xp">0</span> / <span id="xpToLevel">100</span></p>
       <p>Money: $<span id="money">100</span></p>
       <p>Current Map: <span id="currentMap">Map 1</span></p>
-      <button class="save-load-btn" id="save-btn">Save Game</button>
-      <button class="save-load-btn" id="load-btn">Load Game</button>
-      <button class="save-load-btn" id="reset-btn">Reset</button>
-    </div>
-
-    <div class="section" id="map-switch">
-      <h2>Maps (Unlock every few hero levels)</h2>
+      <button class="save-load-btn" id="save-btn" aria-label="Save Game">Save Game</button>
+      <button class="save-load-btn" id="load-btn" aria-label="Load Game">Load Game</button>
+      <button class="save-load-btn" id="reset-btn" aria-label="Reset Game">Reset</button>
+    </section>
+    <section aria-labelledby="class-legend-title" id="class-legend">
+      <h2 id="class-legend-title">Hero Classes</h2>
+      <ul style="display:flex; gap:24px; list-style:none; padding:0; margin:0;">
+        <li><span class="class tech" title="Technology heroes excel at gadgets and hacking.">Tech</span></li>
+        <li><span class="class magic" title="Magic heroes use spells and arcane arts.">Magic</span></li>
+        <li><span class="class strength" title="Strength heroes focus on raw power.">Strength</span></li>
+        <li><span class="class speed" title="Speed heroes are quick and agile.">Speed</span></li>
+      </ul>
+    </section>
+    <section aria-labelledby="map-switch-title" id="map-switch">
+      <h2 id="map-switch-title">Maps <span aria-label="Unlock maps by leveling up heroes">(Unlock every few hero levels)</span></h2>
       <div class="grid" id="map-buttons"></div>
-    </div>
-
-    <div class="section" id="heroes">
-      <h2>Owned Heroes</h2>
+    </section>
+    <section aria-labelledby="heroes-title" id="heroes">
+      <h2 id="heroes-title">Owned Heroes</h2>
       <div class="grid" id="heroes-list"></div>
       <p style="margin-top:10px">Total Money Per Second: $<span id="total-mps">0</span></p>
-    </div>
-
-    <div class="section" id="shop">
-      <h2>Hero Shop</h2>
+    </section>
+    <section aria-labelledby="shop-title" id="shop">
+      <h2 id="shop-title">Hero Shop</h2>
+      <label for="class-filter">Filter by Class:</label>
+      <select id="class-filter" aria-label="Filter heroes by class">
+        <option value="">All</option>
+        <option value="Tech">Tech</option>
+        <option value="Magic">Magic</option>
+        <option value="Strength">Strength</option>
+        <option value="Speed">Speed</option>
+      </select>
       <div class="grid" id="shop-heroes"></div>
-    </div>
-
-    <div class="section" id="missions">
-      <h2>Missions</h2>
+    </section>
+    <section aria-labelledby="missions-title" id="missions">
+      <h2 id="missions-title">Missions</h2>
       <div class="grid" id="missions-list"></div>
-    </div>
+    </section>
+    <section aria-labelledby="log-title" id="log">
+      <h2 id="log-title">Log</h2>
+      <div id="log-content" aria-live="polite"></div>
+    </section>
+  </main>
+  <script>
+    // --- Constants and Data ---
+    const MAP_COUNT = 15;
+    const HERO_COUNT = 50;
+    const LEVELS_PER_MAP = 20;
+    const mapNames = [
+      "Skyline City","Shadow District","Neon Harbor","Crystal Caverns","Ironworks","Solaris Heights","Quantum Quarter",
+      "Twilight Outlands","Meteorite Falls","Circuit Spires","Aetherium Isles","Obsidian Expanse","Celestial Park",
+      "Echoing Depths","Titan's Reach"
+    ];
+    const maps = Array.from({length: MAP_COUNT}, (_,i) => ({
+      name: mapNames[i],
+      unlockLevel: 1 + i * LEVELS_PER_MAP
+    }));
 
-    <div class="section" id="log">
-      <h2>Log</h2>
-      <div id="log-content"></div>
-    </div>
-  </div>
-<script>
-  // --- Maps: Unlock every 20 levels ---
-  const MAP_COUNT = 15;
-  const HERO_COUNT = 50;
-  const LEVELS_PER_MAP = 20;
-  const mapNames = [
-  "Skyline City",
-  "Shadow District",
-  "Neon Harbor",
-  "Crystal Caverns",
-  "Ironworks",
-  "Solaris Heights",
-  "Quantum Quarter",
-  "Twilight Outlands",
-  "Meteorite Falls",
-  "Circuit Spires",
-  "Aetherium Isles",
-  "Obsidian Expanse",
-  "Celestial Park",
-  "Echoing Depths",
-  "Titan's Reach"
-];
-const maps = Array.from({length: MAP_COUNT}, (_,i) => ({
-  name: mapNames[i],
-  unlockLevel: 1 + i * LEVELS_PER_MAP
-}));
+    const heroNames = [
+      "Blaze", "Frostbite", "Shockwave", "Inferno", "Glacier", "Sandstorm", "Wildwood", "Tsunami", "Voltar", "Blizzard",
+      "Cinder", "Echo", "Ironclad", "Stormbreaker", "Phantom", "Nova", "Titan", "Solarflare", "Quake", "Tempest",
+      "Shadowstrike", "Glitch", "Aurora", "Ember", "Fang", "Hydra", "Bolt", "Vortex", "Frostfang", "Dune",
+      "Gale", "Nightshade", "Tide", "Pulse", "Flare", "Glint", "Blitz", "Shadow", "Cascade", "Steelclaw",
+      "Quasar", "Nebula", "Pyro", "Arctic Fox", "Mirage", "Specter", "Solaris", "Cyclone", "Darkwave", "Luminara"
+    ];
+    while (heroNames.length < HERO_COUNT) heroNames.push("Hero" + (heroNames.length + 1));
 
-  // --- Heroes ---
-  const heroNames = [
-    "Blaze", "Frostbite", "Shockwave", "Inferno", "Glacier", "Sandstorm", "Wildwood", "Tsunami", "Voltar", "Blizzard",
-    "Cinder", "Echo", "Ironclad", "Stormbreaker", "Phantom", "Nova", "Titan", "Solarflare", "Quake", "Tempest",
-    "Shadowstrike", "Glitch", "Aurora", "Ember", "Fang", "Hydra", "Bolt", "Vortex", "Frostfang", "Dune",
-    "Gale", "Nightshade", "Tide", "Pulse", "Flare", "Glint", "Blitz", "Shadow", "Cascade", "Steelclaw",
-    "Quasar", "Nebula", "Pyro", "Arctic Fox", "Mirage", "Specter", "Solaris", "Cyclone", "Darkwave", "Luminara"
-  ];
-  while (heroNames.length < HERO_COUNT) heroNames.push("Hero"+(heroNames.length+1));
-  const heroes = Array.from({length: HERO_COUNT}, (_,i) => ({
-    id: i+1,
-    name: heroNames[i],
-    mps: 1 + Math.floor(Math.random()*10) + i,
-    price: 100 + i*50,
-    map: maps[Math.floor(i/(HERO_COUNT/MAP_COUNT))].name,
-    unlockLevel: 1 + Math.floor(i/(HERO_COUNT/MAP_COUNT)) * LEVELS_PER_MAP
-  }));
+    const heroClasses = ["Tech", "Magic", "Strength", "Speed"];
+    const heroes = Array.from({length: HERO_COUNT}, (_,i) => ({
+      id: i+1,
+      name: heroNames[i],
+      mps: 1 + Math.floor(Math.random()*10) + i,
+      price: 100 + i*50,
+      map: maps[Math.floor(i/(HERO_COUNT/MAP_COUNT))].name,
+      unlockLevel: 1 + Math.floor(i/(HERO_COUNT/MAP_COUNT)) * LEVELS_PER_MAP,
+      class: heroClasses[i % heroClasses.length]
+    }));
 
-  // --- Missions (50) ---
- const missionNamesPerMap = [
-  // Skyline City
-  ["Stop the Bank Heist", "Rescue the Mayor", "Defuse the Skyscraper Bomb", "Intercept Midnight Robbery", "Save the Runaway Train"],
-  // Shadow District
-  ["Infiltrate the Syndicate", "Shadow Alley Chase", "Break the Smuggling Ring", "Decode Secret Messages", "Silent Sabotage"],
-  // Neon Harbor
-  ["Guard the Neon Docks", "Battle the Pirate Crew", "Protect Cargo Ships", "Halt Black Market Deal", "Rescue Hostages at Pier 9"],
-  // Crystal Caverns
-  ["Retrieve Crystal Shards", "Defeat the Cave Beast", "Rescue Trapped Miners", "Map the Hidden Passages", "Secure the Cavern Entrance"],
-  // Ironworks
-  ["Stop Factory Sabotage", "Rescue Workers", "Shut Down Rogue Machines", "Protect Prototype Tech", "Investigate Explosions"],
-  // Solaris Heights
-  ["Prevent Solar Flare", "Protect the Observatory", "Evacuate Residents", "Apprehend Arsonist", "Restore Power Grid"],
-  // Quantum Quarter
-  ["Contain Anomaly", "Rescue Lab Scientists", "Stop Tech Theft", "Seal Quantum Rift", "Hack the Mainframe"],
-  // Twilight Outlands
-  ["Patrol the Borderlands", "Rescue Lost Explorers", "Defeat Outland Marauders", "Secure Outpost", "Recover Lost Supplies"],
-  // Meteorite Falls
-  ["Investigate Meteor Crash", "Evacuate Impact Zone", "Battle Alien Invaders", "Research Meteor Fragments", "Quarantine Contaminated Area"],
-  // Circuit Spires
-  ["Protect Data Towers", "Chase Cyber Criminals", "Repair Main Circuits", "Install Security Upgrades", "Foil Hacking Attempt"],
-  // Aetherium Isles
-  ["Rescue Drifting Ships", "Battle Sky Pirates", "Seal Dimensional Rifts", "Protect Floating Gardens", "Restore Weather Control"],
-  // Obsidian Expanse
-  ["Track Rogue Mutants", "Secure Resource Convoy", "Defend Outlying Camps", "Investigate Disappearances", "Survey Dangerous Terrain"],
-  // Celestial Park
-  ["Calm the Rampaging Beast", "Rescue Tourists", "Protect Ancient Relics", "Stop the Park Poachers", "Find Lost Children"],
-  // Echoing Depths
-  ["Explore the Abyss Ruins", "Rescue Divers", "Fight the Abyssal Leviathan", "Secure the Research Sub", "Map the Underwater Tunnels"],
-  // Titan's Reach
-  ["Climb the Titan Spire", "Defeat the Giant Golem", "Rescue the Expedition", "Protect the Mountain Base", "Secure the Ancient Relic"]
-];
-
-let missions = [];
-let missionId = 1;
-for (let mapIdx = 0; mapIdx < missionNamesPerMap.length; mapIdx++) {
-  for (let i = 0; i < missionNamesPerMap[mapIdx].length; i++) {
-    missions.push({
-      id: missionId,
-      name: missionNamesPerMap[mapIdx][i],
-      xpReward: 10 + mapIdx * 5 + i, // scaling rewards
-      moneyReward: 25 + mapIdx * 10 + i * 3,
-      minLevel: 1 + mapIdx * LEVELS_PER_MAP,
-      baseDuration: 5 + mapIdx + i
-    });
-    missionId++;
-  }
-}
-
-  // --- Player state ---
-  let player = {
-    level: 1,
-    xp: 0,
-    money: 100,
-    heroesOwned: [1],
-    currentMap: maps[0].name,
-    heroMissions: {}, // heroId: {missionId, timeLeft, inProgress}
-  };
-
-  // --- UI elements ---
-  const levelEl = document.getElementById('level');
-  const xpEl = document.getElementById('xp');
-  const xpToLevelEl = document.getElementById('xpToLevel');
-  const moneyEl = document.getElementById('money');
-  const currentMapEl = document.getElementById('currentMap');
-  const heroesListEl = document.getElementById('heroes-list');
-  const shopHeroesEl = document.getElementById('shop-heroes');
-  const missionsListEl = document.getElementById('missions-list');
-  const mapButtonsEl = document.getElementById('map-buttons');
-  const logContentEl = document.getElementById('log-content');
-  const saveBtn = document.getElementById('save-btn');
-  const loadBtn = document.getElementById('load-btn');
-  const resetBtn = document.getElementById('reset-btn');
-  const totalMpsEl = document.getElementById('total-mps');
-
-  function xpToNextLevel(level) {
-    return 100 + (level - 1) * 50;
-  }
-  function addLog(text) {
-    const p = document.createElement('p');
-    p.textContent = text;
-    logContentEl.appendChild(p);
-    logContentEl.scrollTop = logContentEl.scrollHeight;
-  }
-
-  saveBtn.onclick = function() {
-    localStorage.setItem('idle-superhero-save', JSON.stringify(player));
-    addLog('Game saved!');
-  };
-  loadBtn.onclick = function() {
-    const data = localStorage.getItem('idle-superhero-save');
-    if (data) {
-      player = JSON.parse(data);
-      addLog('Game loaded!');
-      updateAll();
-    } else addLog('No save found.');
-  };
-  resetBtn.onclick = function() {
-    if (confirm('Reset your progress?')) {
-      localStorage.removeItem('idle-superhero-save');
-      location.reload();
+    // --- Missions (50) ---
+    // [Truncated for brevity in this response: the missionNamesPerMap and mission creation logic are unchanged from your file]
+    const missionNamesPerMap = [
+      ["Stop the Bank Heist", "Rescue the Mayor", "Defuse the Skyscraper Bomb", "Intercept Midnight Robbery", "Save the Runaway Train"],
+      ["Infiltrate the Syndicate", "Shadow Alley Chase", "Break the Smuggling Ring", "Decode Secret Messages", "Silent Sabotage"],
+      ["Guard the Neon Docks", "Battle the Pirate Crew", "Protect Cargo Ships", "Halt Black Market Deal", "Rescue Hostages at Pier 9"],
+      ["Retrieve Crystal Shards", "Defeat the Cave Beast", "Rescue Trapped Miners", "Map the Hidden Passages", "Secure the Cavern Entrance"],
+      ["Stop Factory Sabotage", "Rescue Workers", "Shut Down Rogue Machines", "Protect Prototype Tech", "Investigate Explosions"],
+      ["Prevent Solar Flare", "Protect the Observatory", "Evacuate Residents", "Apprehend Arsonist", "Restore Power Grid"],
+      ["Contain Anomaly", "Rescue Lab Scientists", "Stop Tech Theft", "Seal Quantum Rift", "Hack the Mainframe"],
+      ["Patrol the Borderlands", "Rescue Lost Explorers", "Defeat Outland Marauders", "Secure Outpost", "Recover Lost Supplies"],
+      ["Investigate Meteor Crash", "Evacuate Impact Zone", "Battle Alien Invaders", "Research Meteor Fragments", "Quarantine Contaminated Area"],
+      ["Protect Data Towers", "Chase Cyber Criminals", "Repair Main Circuits", "Install Security Upgrades", "Foil Hacking Attempt"],
+      ["Rescue Drifting Ships", "Battle Sky Pirates", "Seal Dimensional Rifts", "Protect Floating Gardens", "Restore Weather Control"],
+      ["Track Rogue Mutants", "Secure Resource Convoy", "Defend Outlying Camps", "Investigate Disappearances", "Survey Dangerous Terrain"],
+      ["Calm the Rampaging Beast", "Rescue Tourists", "Protect Ancient Relics", "Stop the Park Poachers", "Find Lost Children"],
+      ["Explore the Abyss Ruins", "Rescue Divers", "Fight the Abyssal Leviathan", "Secure the Research Sub", "Map the Underwater Tunnels"],
+      ["Climb the Titan Spire", "Defeat the Giant Golem", "Rescue the Expedition", "Protect the Mountain Base", "Secure the Ancient Relic"]
+    ];
+    let missions = [];
+    let missionId = 1;
+    for (let mapIdx = 0; mapIdx < missionNamesPerMap.length; mapIdx++) {
+      for (let i = 0; i < missionNamesPerMap[mapIdx].length; i++) {
+        missions.push({
+          id: missionId,
+          name: missionNamesPerMap[mapIdx][i],
+          xpReward: 10 + mapIdx * 5 + i, // scaling rewards
+          moneyReward: 25 + mapIdx * 10 + i * 3,
+          minLevel: 1 + mapIdx * LEVELS_PER_MAP,
+          baseDuration: 5 + mapIdx + i
+        });
+        missionId++;
+      }
     }
-  };
 
-  function updatePlayerUI() {
-    levelEl.textContent = player.level;
-    xpEl.textContent = player.xp;
-    xpToLevelEl.textContent = xpToNextLevel(player.level);
-    moneyEl.textContent = player.money.toFixed(2);
-    currentMapEl.textContent = player.currentMap;
-  }
-  function updateHeroesUI() {
-    heroesListEl.innerHTML = '';
-    let totalMps = 0;
-    player.heroesOwned.forEach((id) => {
-      const hero = heroes.find(h => h.id === id);
-      if (!hero) return;
-      totalMps += hero.mps;
-      const div = document.createElement('div');
-      div.className = 'hero';
-      div.innerHTML = `<strong>${hero.name}</strong><br>
-        Map: ${hero.map}<br>
-        MPS: $${hero.mps}`;
-      heroesListEl.appendChild(div);
-    });
-    totalMpsEl.textContent = totalMps;
-  }
-  function updateShopUI() {
-    shopHeroesEl.innerHTML = '';
-    const available = heroes.filter(h =>
-      h.map === player.currentMap &&
-      !player.heroesOwned.includes(h.id) &&
-      player.level >= h.unlockLevel
-    );
-    if (!available.length) {
-      shopHeroesEl.textContent = 'No heroes available to buy here.';
-      return;
+    // --- Player state ---
+    let player = {
+      level: 1,
+      xp: 0,
+      money: 100,
+      heroesOwned: [1],
+      currentMap: maps[0].name,
+      heroMissions: {}, // heroId: {missionId, timeLeft, inProgress}
+    };
+
+    // --- UI elements ---
+    const levelEl = document.getElementById('level');
+    const xpEl = document.getElementById('xp');
+    const xpToLevelEl = document.getElementById('xpToLevel');
+    const moneyEl = document.getElementById('money');
+    const currentMapEl = document.getElementById('currentMap');
+    const heroesListEl = document.getElementById('heroes-list');
+    const shopHeroesEl = document.getElementById('shop-heroes');
+    const missionsListEl = document.getElementById('missions-list');
+    const mapButtonsEl = document.getElementById('map-buttons');
+    const logContentEl = document.getElementById('log-content');
+    const saveBtn = document.getElementById('save-btn');
+    const loadBtn = document.getElementById('load-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const totalMpsEl = document.getElementById('total-mps');
+    const classFilterEl = document.getElementById('class-filter');
+
+    function xpToNextLevel(level) {
+      return 100 + (level - 1) * 50;
     }
-    available.forEach(hero => {
-      const div = document.createElement('div');
-      div.className = 'shop-item';
-      div.innerHTML = `<strong>${hero.name}</strong><br>
-        Price: $${hero.price}<br>
-        MPS: $${hero.mps}<br>
-        <button ${player.money < hero.price ? 'disabled' : ''}>Buy</button>`;
-      div.querySelector('button').onclick = function() {
-        if (player.money >= hero.price) {
-          player.money -= hero.price;
-          player.heroesOwned.push(hero.id);
-          addLog(`Bought hero ${hero.name} for $${hero.price}`);
-          updateAll();
-        }
-      };
-      shopHeroesEl.appendChild(div);
-    });
-  }
-  function updateMapButtonsUI() {
-    mapButtonsEl.innerHTML = '';
-    maps.forEach(map => {
-      const unlocked = player.level >= map.unlockLevel;
-      const btn = document.createElement('button');
-      btn.textContent = map.name + (unlocked ? '' : ' (Locked)');
-      btn.className = 'map-button' + (unlocked ? '' : ' locked');
-      btn.disabled = !unlocked;
-      btn.onclick = () => {
-        if (player.currentMap === map.name) return;
-        player.currentMap = map.name;
-        addLog(`Switched to map: ${map.name}`);
-        updatePlayerUI();
-        updateShopUI();
-      };
-      mapButtonsEl.appendChild(btn);
-    });
-  }
+    function addLog(text) {
+      const p = document.createElement('p');
+      p.textContent = text;
+      logContentEl.appendChild(p);
+      logContentEl.scrollTop = logContentEl.scrollHeight;
+    }
 
-  // --- Missions per hero ---
-  function updateMissionsUI() {
-    missionsListEl.innerHTML = '';
-    player.heroesOwned.forEach(heroId => {
-      const hero = heroes.find(h => h.id === heroId);
-      const assign = player.heroMissions[heroId] || {};
-      const div = document.createElement('div');
-      div.className = 'mission';
-
-      // Mission assignment dropdown
-      let missionOptions = `<option value="">Assign Mission</option>`;
-      missions.forEach(miss => {
-        if (player.level >= miss.minLevel) {
-          missionOptions += `<option value="${miss.id}" ${assign.missionId==miss.id?'selected':''}>${miss.name}</option>`;
-        }
-      });
-
-      if (assign.inProgress) {
-        div.innerHTML = `<strong>${hero.name}</strong><br>
-          On: ${missions.find(m=>m.id===assign.missionId)?.name || 'Unknown'}<br>
-          Time left: <span id="hero-mission-timer-${heroId}">${assign.timeLeft}</span>s<br>
-          <button disabled>In Progress</button>`;
-      } else {
-        div.innerHTML = `<strong>${hero.name}</strong><br>
-          <select class="hero-mission-select">${missionOptions}</select>
-          <button>Start Mission</button>`;
-        const select = div.querySelector('.hero-mission-select');
-        select.onchange = (e) => {
-          assign.missionId = parseInt(e.target.value)||null;
-          player.heroMissions[heroId] = assign;
-        };
-        div.querySelector('button').onclick = () => {
-          if (!assign.missionId) {
-            alert('Assign a mission first!');
-            return;
+    saveBtn.onclick = function() {
+      localStorage.setItem('idle-superhero-save', JSON.stringify(player));
+      addLog('Game saved!');
+    };
+    function safeLoad() {
+      try {
+        const data = localStorage.getItem('idle-superhero-save');
+        if (data) {
+          const parsed = JSON.parse(data);
+          // Optional: basic validation
+          if (typeof parsed === "object" && parsed.level && parsed.heroesOwned) {
+            player = parsed;
+            addLog('Game loaded!');
+            updateAll();
+          } else {
+            addLog('Save data corrupted.');
           }
-          assign.inProgress = true;
-          const base = missions.find(m=>m.id===assign.missionId);
-          assign.timeLeft = base.baseDuration;
-          player.heroMissions[heroId] = assign;
-          addLog(`${hero.name} started ${base.name}.`);
-          updateMissionsUI();
-          startHeroMissionTimer(heroId);
+        } else addLog('No save found.');
+      } catch (e) {
+        addLog('Error loading save data.');
+      }
+    }
+    loadBtn.onclick = safeLoad;
+    resetBtn.onclick = function() {
+      if (confirm('Reset your progress?')) {
+        localStorage.removeItem('idle-superhero-save');
+        location.reload();
+      }
+    };
+
+    function updatePlayerUI() {
+      levelEl.textContent = player.level;
+      xpEl.textContent = player.xp;
+      xpToLevelEl.textContent = xpToNextLevel(player.level);
+      moneyEl.textContent = player.money.toFixed(2);
+      currentMapEl.textContent = player.currentMap;
+    }
+    function updateHeroesUI() {
+      heroesListEl.innerHTML = '';
+      let totalMps = 0;
+      player.heroesOwned.forEach((id) => {
+        const hero = heroes.find(h => h.id === id);
+        if (!hero) return;
+        totalMps += hero.mps;
+        const div = document.createElement('div');
+        div.className = 'hero';
+        div.innerHTML = `<strong>${hero.name}</strong><br>
+          <span class="class ${hero.class.toLowerCase()}">${hero.class}</span><br>
+          Map: ${hero.map}<br>
+          MPS: $${hero.mps}`;
+        heroesListEl.appendChild(div);
+      });
+      totalMpsEl.textContent = totalMps;
+    }
+    classFilterEl.onchange = updateShopUI;
+    function updateShopUI() {
+      shopHeroesEl.innerHTML = '';
+      const filter = classFilterEl.value;
+      const available = heroes.filter(h =>
+        h.map === player.currentMap &&
+        !player.heroesOwned.includes(h.id) &&
+        player.level >= h.unlockLevel &&
+        (filter === "" || h.class === filter)
+      );
+      if (!available.length) {
+        shopHeroesEl.textContent = 'No heroes available to buy here.';
+        return;
+      }
+      available.forEach(hero => {
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `<strong>${hero.name}</strong><br>
+          <span class="class ${hero.class.toLowerCase()}">${hero.class}</span><br>
+          Price: $${hero.price}<br>
+          MPS: $${hero.mps}<br>
+          <button ${player.money < hero.price ? 'disabled' : ''}>Buy</button>`;
+        div.querySelector('button').onclick = function() {
+          if (player.money >= hero.price) {
+            player.money -= hero.price;
+            player.heroesOwned.push(hero.id);
+            addLog(`Bought hero ${hero.name} (${hero.class}) for $${hero.price}`);
+            updateAll();
+          }
         };
-      }
-      missionsListEl.appendChild(div);
-    });
-  }
-
-  function updateAll() {
-    updatePlayerUI();
-    updateHeroesUI();
-    updateShopUI();
-    updateMapButtonsUI();
-    updateMissionsUI();
-  }
-
-  // Hero income (idle)
-  setInterval(() => {
-    let totalMps = 0;
-    player.heroesOwned.forEach(id => {
-      const hero = heroes.find(h => h.id === id);
-      if (hero) totalMps += hero.mps;
-    });
-    player.money += totalMps / 2;
-    moneyEl.textContent = player.money.toFixed(2);
-    totalMpsEl.textContent = totalMps;
-  }, 500);
-
-  function startHeroMissionTimer(heroId) {
-    const assign = player.heroMissions[heroId];
-    if (!assign || !assign.inProgress) return;
-    function tick() {
-      if (!assign.inProgress) return;
-      assign.timeLeft -= 1;
-      const timerSpan = document.getElementById(`hero-mission-timer-${heroId}`);
-      if (timerSpan) timerSpan.textContent = assign.timeLeft;
-      if (assign.timeLeft <= 0) {
-        assign.inProgress = false;
-        const base = missions.find(m=>m.id===assign.missionId);
-        player.money += base.moneyReward;
-        player.xp += base.xpReward;
-        addLog(`${heroes.find(h=>h.id===heroId).name} finished ${base.name}! +$${base.moneyReward}, +${base.xpReward} XP`);
-        assign.missionId = null;
-        checkLevelUp();
-        updateAll();
-      } else {
-        setTimeout(tick, 1000);
-      }
+        shopHeroesEl.appendChild(div);
+      });
     }
-    tick();
-  }
-  function checkLevelUp() {
-    let nextLevelXp = xpToNextLevel(player.level);
-    while (player.xp >= nextLevelXp) {
-      player.xp -= nextLevelXp;
-      player.level++;
-      addLog(`Level up! Now level ${player.level}`);
-      updateMapButtonsUI();
+    function updateMapButtonsUI() {
+      mapButtonsEl.innerHTML = '';
+      maps.forEach(map => {
+        const unlocked = player.level >= map.unlockLevel;
+        const btn = document.createElement('button');
+        btn.textContent = map.name + (unlocked ? '' : ' (Locked)');
+        btn.className = 'map-button' + (unlocked ? '' : ' locked');
+        btn.disabled = !unlocked;
+        btn.onclick = () => {
+          if (player.currentMap === map.name) return;
+          player.currentMap = map.name;
+          addLog(`Switched to map: ${map.name}`);
+          updatePlayerUI();
+          updateShopUI();
+        };
+        mapButtonsEl.appendChild(btn);
+      });
+    }
+    function updateMissionsUI() {
+      missionsListEl.innerHTML = '';
+      player.heroesOwned.forEach(heroId => {
+        const hero = heroes.find(h => h.id === heroId);
+        const assign = player.heroMissions[heroId] || {};
+        const div = document.createElement('div');
+        div.className = 'mission';
+        // Mission assignment dropdown
+        let missionOptions = `<option value="">Assign Mission</option>`;
+        missions.forEach(miss => {
+          if (player.level >= miss.minLevel) {
+            missionOptions += `<option value="${miss.id}" ${assign.missionId==miss.id?'selected':''}>${miss.name}</option>`;
+          }
+        });
+        if (assign.inProgress) {
+          div.innerHTML = `<strong>${hero.name}</strong><br>
+            <span class="class ${hero.class.toLowerCase()}">${hero.class}</span><br>
+            On: ${missions.find(m=>m.id===assign.missionId)?.name || 'Unknown'}<br>
+            Time left: <span id="hero-mission-timer-${heroId}">${assign.timeLeft}</span>s<br>
+            <button disabled>In Progress</button>`;
+        } else {
+          div.innerHTML = `<strong>${hero.name}</strong><br>
+            <span class="class ${hero.class.toLowerCase()}">${hero.class}</span><br>
+            <select class="hero-mission-select" aria-label="Assign mission to ${hero.name}">${missionOptions}</select>
+            <button>Start Mission</button>`;
+          const select = div.querySelector('.hero-mission-select');
+          select.onchange = (e) => {
+            assign.missionId = parseInt(e.target.value)||null;
+            player.heroMissions[heroId] = assign;
+          };
+          div.querySelector('button').onclick = () => {
+            if (!assign.missionId) {
+              alert('Assign a mission first!');
+              return;
+            }
+            assign.inProgress = true;
+            const base = missions.find(m=>m.id===assign.missionId);
+            assign.timeLeft = base.baseDuration;
+            player.heroMissions[heroId] = assign;
+            addLog(`${hero.name} started ${base.name}.`);
+            updateMissionsUI();
+            startHeroMissionTimer(heroId);
+          };
+        }
+        missionsListEl.appendChild(div);
+      });
+    }
+    function updateAll() {
+      updatePlayerUI();
+      updateHeroesUI();
       updateShopUI();
+      updateMapButtonsUI();
       updateMissionsUI();
-      nextLevelXp = xpToNextLevel(player.level);
     }
-    updatePlayerUI();
-  }
-  function init() {
-    updateAll();
-    addLog('Welcome to Idle Superhero Tycoon! Assign each hero to a mission.');
-  }
-  init();
-</script>
+    // Hero income (idle)
+    setInterval(() => {
+      let totalMps = 0;
+      player.heroesOwned.forEach(id => {
+        const hero = heroes.find(h => h.id === id);
+        if (hero) totalMps += hero.mps;
+      });
+      player.money += totalMps / 2;
+      moneyEl.textContent = player.money.toFixed(2);
+      totalMpsEl.textContent = totalMps;
+    }, 500);
+
+    function startHeroMissionTimer(heroId) {
+      const assign = player.heroMissions[heroId];
+      if (!assign || !assign.inProgress) return;
+      function tick() {
+        if (!assign.inProgress) return;
+        assign.timeLeft -= 1;
+        const timerSpan = document.getElementById(`hero-mission-timer-${heroId}`);
+        if (timerSpan) timerSpan.textContent = assign.timeLeft;
+        if (assign.timeLeft <= 0) {
+          assign.inProgress = false;
+          const base = missions.find(m=>m.id===assign.missionId);
+          player.money += base.moneyReward;
+          player.xp += base.xpReward;
+          addLog(`${heroes.find(h=>h.id===heroId).name} finished ${base.name}! +$${base.moneyReward}, +${base.xpReward} XP`);
+          assign.missionId = null;
+          checkLevelUp();
+          updateAll();
+        } else {
+          setTimeout(tick, 1000);
+        }
+      }
+      tick();
+    }
+    function checkLevelUp() {
+      let nextLevelXp = xpToNextLevel(player.level);
+      while (player.xp >= nextLevelXp) {
+        player.xp -= nextLevelXp;
+        player.level++;
+        addLog(`Level up! Now level ${player.level}`);
+        updateMapButtonsUI();
+        updateShopUI();
+        updateMissionsUI();
+        nextLevelXp = xpToNextLevel(player.level);
+      }
+      updatePlayerUI();
+    }
+    function init() {
+      updateAll();
+      addLog('Welcome to Idle Superhero Tycoon! Assign each hero to a mission.');
+    }
+    init();
+  </script>
 </body>
 </html>
