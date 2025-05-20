@@ -67,10 +67,27 @@
   const MAP_COUNT = 15;
   const HERO_COUNT = 50;
   const LEVELS_PER_MAP = 20;
-  const maps = Array.from({length: MAP_COUNT}, (_,i) => ({
-    name: `Map ${i+1}`,
-    unlockLevel: 1 + i * LEVELS_PER_MAP
-  }));
+  const mapNames = [
+  "Skyline City",
+  "Shadow District",
+  "Neon Harbor",
+  "Crystal Caverns",
+  "Ironworks",
+  "Solaris Heights",
+  "Quantum Quarter",
+  "Twilight Outlands",
+  "Meteorite Falls",
+  "Circuit Spires",
+  "Aetherium Isles",
+  "Obsidian Expanse",
+  "Celestial Park",
+  "Echoing Depths",
+  "Titan's Reach"
+];
+const maps = Array.from({length: MAP_COUNT}, (_,i) => ({
+  name: mapNames[i],
+  unlockLevel: 1 + i * LEVELS_PER_MAP
+}));
 
   // --- Heroes ---
   const heroNames = [
@@ -91,15 +108,54 @@
   }));
 
   // --- Missions (50) ---
-  const missionNames = Array.from({length: 50}, (_,i) => `Mission ${i+1}`);
-  const missions = Array.from({length: 50}, (_,i) => ({
-    id: i+1,
-    name: missionNames[i],
-    xpReward: 10 + i,
-    moneyReward: 20 + i*3,
-    minLevel: 1 + Math.floor(i/3),
-    baseDuration: 5 + Math.floor(i/5)
-  }));
+ const missionNamesPerMap = [
+  // Skyline City
+  ["Stop the Bank Heist", "Rescue the Mayor", "Defuse the Skyscraper Bomb", "Intercept Midnight Robbery", "Save the Runaway Train"],
+  // Shadow District
+  ["Infiltrate the Syndicate", "Shadow Alley Chase", "Break the Smuggling Ring", "Decode Secret Messages", "Silent Sabotage"],
+  // Neon Harbor
+  ["Guard the Neon Docks", "Battle the Pirate Crew", "Protect Cargo Ships", "Halt Black Market Deal", "Rescue Hostages at Pier 9"],
+  // Crystal Caverns
+  ["Retrieve Crystal Shards", "Defeat the Cave Beast", "Rescue Trapped Miners", "Map the Hidden Passages", "Secure the Cavern Entrance"],
+  // Ironworks
+  ["Stop Factory Sabotage", "Rescue Workers", "Shut Down Rogue Machines", "Protect Prototype Tech", "Investigate Explosions"],
+  // Solaris Heights
+  ["Prevent Solar Flare", "Protect the Observatory", "Evacuate Residents", "Apprehend Arsonist", "Restore Power Grid"],
+  // Quantum Quarter
+  ["Contain Anomaly", "Rescue Lab Scientists", "Stop Tech Theft", "Seal Quantum Rift", "Hack the Mainframe"],
+  // Twilight Outlands
+  ["Patrol the Borderlands", "Rescue Lost Explorers", "Defeat Outland Marauders", "Secure Outpost", "Recover Lost Supplies"],
+  // Meteorite Falls
+  ["Investigate Meteor Crash", "Evacuate Impact Zone", "Battle Alien Invaders", "Research Meteor Fragments", "Quarantine Contaminated Area"],
+  // Circuit Spires
+  ["Protect Data Towers", "Chase Cyber Criminals", "Repair Main Circuits", "Install Security Upgrades", "Foil Hacking Attempt"],
+  // Aetherium Isles
+  ["Rescue Drifting Ships", "Battle Sky Pirates", "Seal Dimensional Rifts", "Protect Floating Gardens", "Restore Weather Control"],
+  // Obsidian Expanse
+  ["Track Rogue Mutants", "Secure Resource Convoy", "Defend Outlying Camps", "Investigate Disappearances", "Survey Dangerous Terrain"],
+  // Celestial Park
+  ["Calm the Rampaging Beast", "Rescue Tourists", "Protect Ancient Relics", "Stop the Park Poachers", "Find Lost Children"],
+  // Echoing Depths
+  ["Explore the Abyss Ruins", "Rescue Divers", "Fight the Abyssal Leviathan", "Secure the Research Sub", "Map the Underwater Tunnels"],
+  // Titan's Reach
+  ["Climb the Titan Spire", "Defeat the Giant Golem", "Rescue the Expedition", "Protect the Mountain Base", "Secure the Ancient Relic"]
+];
+
+let missions = [];
+let missionId = 1;
+for (let mapIdx = 0; mapIdx < missionNamesPerMap.length; mapIdx++) {
+  for (let i = 0; i < missionNamesPerMap[mapIdx].length; i++) {
+    missions.push({
+      id: missionId,
+      name: missionNamesPerMap[mapIdx][i],
+      xpReward: 10 + mapIdx * 5 + i, // scaling rewards
+      moneyReward: 25 + mapIdx * 10 + i * 3,
+      minLevel: 1 + mapIdx * LEVELS_PER_MAP,
+      baseDuration: 5 + mapIdx + i
+    });
+    missionId++;
+  }
+}
 
   // --- Player state ---
   let player = {
