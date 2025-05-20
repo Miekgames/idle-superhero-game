@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Idle Superhero Tycoon</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: white; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: auto; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 10px; }
+    .section { margin-top: 30px; background: #222; padding: 20px; border-radius: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+    button { padding: 10px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #666; }
+    .hero, .mission, .shop-item, .gacha-result, .map-button { background: #333; padding: 10px; border-radius: 10px; text-align: center; }
+    .locked { opacity: 0.4; cursor: not-allowed; }
+    #log-content { max-height: 200px; overflow-y: auto; background: #111; padding: 10px; border-radius: 5px; }
+    #mission-status { margin-top: 10px; min-height: 24px; }
+    select, #start-mission, #buy-gacha { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Idle Superhero Tycoon</h1>
+
+    <div class="section" id="player-stats">
+      <h2>Player Stats</h2>
+      <p>Level: <span id="level">1</span></p>
+      <p>XP: <span id="xp">0</span> / <span id="xpToLevel">100</span></p>
+      <p>Money: $<span id="money">100</span></p>
+      <p>Current Map: <span id="currentMap">City</span></p>
+    </div>
+
+    <div class="section" id="map-switch">
+      <h2>Maps (Unlock every 60 levels)</h2>
+      <div class="grid" id="map-buttons"></div>
+    </div>
+
+    <div class="section" id="heroes">
+      <h2>Owned Heroes</h2>
+      <div class="grid" id="heroes-list"></div>
+    </div>
+
+    <div class="section" id="shop">
+      <h2>Hero Shop (Heroes available on current map)</h2>
+      <div class="grid" id="shop-heroes"></div>
+    </div>
+
+    <div class="section" id="missions">
+      <h2>Missions</h2>
+      <select id="mission-select"></select><br />
+      <button id="start-mission">Start Mission</button>
+      <div id="mission-status"></div>
+    </div>
+
+    <div class="section" id="gacha">
+      <h2>Gacha</h2>
+      <p>Price: $<span id="gacha-price">100</span></p>
+      <button id="buy-gacha">Roll Gacha</button>
+      <div id="gacha-result"></div>
+    </div>
+
+    <div class="section" id="log">
+      <h2>Log</h2>
+      <div id="log-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // Maps with unlock levels
+    const maps = [
+      { name: 'City', unlockLevel: 1 },
+      { name: 'Volcano', unlockLevel: 60 },
+      { name: 'Arctic', unlockLevel: 120 },
+      { name: 'Desert', unlockLevel: 180 },
+      { name: 'Forest', unlockLevel: 240 },
+      { name: 'Underwater', unlockLevel: 300 },
+      { name: 'Skyline', unlockLevel: 360 },
+      { name: 'Ruins', unlockLevel: 420 },
+      { name: 'Space Station', unlockLevel: 480 },
+      { name: 'Cyber City', unlockLevel: 540 },
+    ];
+
+    // Heroes list (50+ heroes) with maps allowed and unlock levels
+    const heroes = [
+      { id: 1, name: 'Blaze', type: 'starter', mapsAllowed: ['City'], unlocksAt: 1, price: 0 },
+      { id: 2, name: 'Frostbite', type: 'starter', mapsAllowed: ['Arctic'], unlocksAt: 1, price: 0 },
+      { id: 3, name: 'Shockwave', type: 'starter', mapsAllowed: ['City'], unlocksAt: 1, price: 0 },
+      { id: 4, name: 'Inferno', type: 'shop', mapsAllowed: ['Volcano'], unlocksAt: 60, price: 500 },
+      { id: 5, name: 'Glacier', type: 'shop', mapsAllowed: ['Arctic'], unlocksAt: 120, price: 600 },
+      { id: 6, name: 'Sandstorm', type: 'shop', mapsAllowed: ['Desert'], unlocksAt: 180, price: 700 },
+      { id: 7, name: 'Wildwood', type: 'shop', mapsAllowed: ['Forest'], unlocksAt: 240, price: 800 },
+      { id: 8, name: 'Tsunami', type: 'shop', mapsAllowed: ['Underwater'], unlocksAt: 300, price: 900 },
+      { id: 9, name: 'Voltar', type: 'shop', mapsAllowed: ['City', 'Volcano'], unlocksAt: 60, price: 1000 },
+      { id: 10, name: 'Blizzard', type: 'shop', mapsAllowed: ['Arctic', 'Forest'], unlocksAt: 120, price: 1100 },
+      { id: 11, name: 'Cinder', type: 'shop', mapsAllowed: ['Volcano', 'Desert'], unlocksAt: 180, price: 1200 },
+      { id: 12, name: 'Echo', type: 'shop', mapsAllowed: ['City'], unlocksAt: 60, price: 1300 },
+      { id: 13, name: 'Ironclad', type: 'shop', mapsAllowed: ['City'], unlocksAt: 60, price: 1400 },
+      { id: 14, name: 'Stormbreaker', type: 'shop', mapsAllowed: ['Skyline'], unlocksAt: 360, price: 1500 },
+      { id: 15, name: 'Phantom', type: 'gacha', mapsAllowed: ['Ruins'], unlocksAt: 420, price: 0 },
+      { id: 16, name: 'Nova', type: 'gacha', mapsAllowed: ['Space Station'], unlocksAt: 480, price: 0 },
+      { id: 17, name: 'Titan', type: 'gacha', mapsAllowed: ['Cyber City'], unlocksAt: 540, price: 0 },
+      // Add more heroes up to 50+ following this structure
+      // For brevity, I'm adding placeholders:
+      { id: 18, name: 'Solarflare', type: 'gacha', mapsAllowed: ['Skyline'], unlocksAt: 360, price: 0 },
+      { id: 19, name: 'Quake', type: 'gacha', mapsAllowed: ['Ruins'], unlocksAt: 420, price: 0 },
+      { id: 20, name: 'Tempest', type: 'gacha', mapsAllowed: ['Forest'], unlocksAt: 240, price: 0 },
+      { id: 21, name: 'Shadowstrike', type: 'gacha', mapsAllowed: ['City'], unlocksAt: 60, price: 0 },
+      { id: 22, name: 'Glitch', type: 'gacha', mapsAllowed: ['Cyber City'], unlocksAt: 540, price: 0 },
+      { id: 23, name: 'Aurora', type: 'gacha', mapsAllowed: ['Arctic'], unlocksAt: 120, price: 0 },
+      { id: 24, name: 'Ember', type: 'gacha', mapsAllowed: ['Volcano'], unlocksAt: 60, price: 0 },
+      { id: 25, name: 'Fang', type: 'gacha', mapsAllowed: ['Forest'], unlocksAt: 240, price: 0 },
+      { id: 26, name: 'Hydra', type: 'gacha', mapsAllowed: ['Underwater'], unlocksAt: 300, price: 0 },
+      { id: 27, name: 'Bolt', type: 'gacha', mapsAllowed: ['City'], unlocksAt: 60, price: 0 },
+      { id: 28, name: 'Vortex', type: 'gacha', mapsAllowed: ['Volcano'], unlocksAt: 60, price: 0 },
+      { id: 29, name: 'Frostfang', type: 'gacha', mapsAllowed: ['Arctic'], unlocksAt: 120, price: 0 },
+      { id: 30, name: 'Dune', type: 'gacha', mapsAllowed: ['Desert'], unlocksAt: 180, price: 0 },
+      { id: 31, name: 'Gale', type: 'gacha', mapsAllowed: ['Skyline'], unlocksAt: 360, price: 0 },
+      { id: 32, name: 'Nightshade', type: 'gacha', mapsAllowed: ['Ruins'], unlocksAt: 420, price: 0 },
+      { id: 33, name: 'Tide', type: 'gacha', mapsAllowed: ['Underwater'], unlocksAt: 300, price: 0 },
+      { id: 34, name: 'Pulse', type: 'gacha', mapsAllowed: ['City'], unlocksAt: 60, price: 0 },
+      { id: 35, name: 'Echo', type: 'gacha', mapsAllowed: ['Cyber City'], unlocksAt: 540, price: 0 },
+      { id: 36, name: 'Flare', type: 'gacha', mapsAllowed: ['Volcano'], unlocksAt: 60, price: 0 },
+      { id: 37, name: 'Glint', type: 'gacha', mapsAllowed: ['Desert'], unlocksAt: 180, price: 0 },
+      { id: 38, name: 'Blitz', type: 'gacha', mapsAllowed: ['City'], unlocksAt: 60, price: 0 },
+      { id: 39, name: 'Shadow', type: 'gacha', mapsAllowed: ['Ruins'], unlocksAt: 420, price: 0 },
+      { id: 40, name: 'Cascade', type: 'gacha', mapsAllowed: ['Underwater'], unlocksAt: 300, price: 0 },
+      { id: 41, name: 'Steelclaw', type: 'gacha', mapsAllowed: ['Forest'], unlocksAt: 240, price: 0 },
+      { id: 42, name: 'Quasar', type: 'gacha', mapsAllowed: ['Space Station'], unlocksAt: 480, price: 0 },
+      { id: 43, name: 'Nebula', type: 'gacha', mapsAllowed: ['Space Station'], unlocksAt: 480, price: 0 },
+      { id: 44, name: 'Pyro', type: 'gacha', mapsAllowed: ['Volcano'], unlocksAt: 60, price: 0 },
+      { id: 45, name: 'Arctic Fox', type: 'gacha', mapsAllowed: ['Arctic'], unlocksAt: 120, price: 0 },
+      { id: 46, name: 'Mirage', type: 'gacha', mapsAllowed: ['Desert'], unlocksAt: 180, price: 0 },
+      { id: 47, name: 'Specter', type: 'gacha', mapsAllowed: ['Ruins'], unlocksAt: 420, price: 0 },
+      { id: 48, name: 'Solaris', type: 'gacha', mapsAllowed: ['Skyline'], unlocksAt: 360, price: 0 },
+      { id: 49, name: 'Cyclone', type: 'gacha', mapsAllowed: ['Forest'], unlocksAt: 240, price: 0 },
+      { id: 50, name: 'Darkwave', type: 'gacha', mapsAllowed: ['Cyber City'], unlocksAt: 540, price: 0 },
+    ];
+
+    // Missions list with names, rewards, and required levels
+    const missions = [
+      { id: 1, name: 'Patrol the City Streets', xpReward: 20, moneyReward: 50, minLevel: 1 },
+      { id: 2, name: 'Extinguish Volcano Fires', xpReward: 40, moneyReward: 150, minLevel: 60 },
+      { id: 3, name: 'Rescue Arctic Researchers', xpReward: 45, moneyReward: 160, minLevel: 120 },
+      { id: 4, name: 'Desert Sandstorm Control', xpReward: 50, moneyReward: 180, minLevel: 180 },
+      { id: 5, name: 'Protect the Forest Wildlife', xpReward: 55, moneyReward: 200, minLevel: 240 },
+      { id: 6, name: 'Underwater Salvage Operation', xpReward: 60, moneyReward: 220, minLevel: 300 },
+      { id: 7, name: 'Skyline Rescue Mission', xpReward: 70, moneyReward: 300, minLevel: 360 },
+      { id: 8, name: 'Explore Ancient Ruins', xpReward: 80, moneyReward: 350, minLevel: 420 },
+      { id: 9, name: 'Space Station Defense', xpReward: 90, moneyReward: 400, minLevel: 480 },
+      { id: 10, name: 'Cyber City Cybercrime Bust', xpReward: 100, moneyReward: 500, minLevel: 540 },
+    ];
+
+    // Player state
+    let player = {
+      level: 1,
+      xp: 0,
+      money: 100,
+      heroesOwned: [1, 2, 3], // Start with starters
+      currentMap: 'City',
+      missionInProgress: false,
+    };
+
+    // DOM elements
+    const levelEl = document.getElementById('level');
+    const xpEl = document.getElementById('xp');
+    const xpToLevelEl = document.getElementById('xpToLevel');
+    const moneyEl = document.getElementById('money');
+    const currentMapEl = document.getElementById('currentMap');
+    const heroesListEl = document.getElementById('heroes-list');
+    const shopHeroesEl = document.getElementById('shop-heroes');
+    const missionSelectEl = document.getElementById('mission-select');
+    const startMissionBtn = document.getElementById('start-mission');
+    const missionStatusEl = document.getElementById('mission-status');
+    const logContentEl = document.getElementById('log-content');
+    const mapButtonsEl = document.getElementById('map-buttons');
+    const gachaPriceEl = document.getElementById('gacha-price');
+    const buyGachaBtn = document.getElementById('buy-gacha');
+    const gachaResultEl = document.getElementById('gacha-result');
+
+    // XP needed for next level formula
+    function xpToNextLevel(level) {
+      return 100 + (level - 1) * 50;
+    }
+
+    // Log helper
+    function addLog(text) {
+      const p = document.createElement('p');
+      p.textContent = text;
+      logContentEl.appendChild(p);
+      logContentEl.scrollTop = logContentEl.scrollHeight;
+    }
+
+    // Update player UI
+    function updatePlayerUI() {
+      levelEl.textContent = player.level;
+      xpEl.textContent = player.xp;
+      xpToLevelEl.textContent = xpToNextLevel(player.level);
+      moneyEl.textContent = player.money.toFixed(2);
+      currentMapEl.textContent = player.currentMap;
+    }
+
+    // Render heroes owned UI
+    function renderHeroes() {
+      heroesListEl.innerHTML = '';
+      player.heroesOwned.forEach((heroId) => {
+        const hero = heroes.find((h) => h.id === heroId);
+        if (!hero) return;
+        const div = document.createElement('div');
+        div.className = 'hero';
+        div.textContent = `${hero.name} (Maps: ${hero.mapsAllowed.join(', ')})`;
+        heroesListEl.appendChild(div);
+      });
+    }
+
+    // Render map buttons (only unlocked maps)
+    function renderMapButtons() {
+      mapButtonsEl.innerHTML = '';
+      maps.forEach((map) => {
+        const unlocked = player.level >= map.unlockLevel;
+        const btn = document.createElement('button');
+        btn.textContent = map.name + (unlocked ? '' : ' (Locked)');
+        btn.className = 'map-button' + (unlocked ? '' : ' locked');
+        btn.disabled = !unlocked;
+        btn.onclick = () => {
+          if (player.currentMap === map.name) return;
+          player.currentMap = map.name;
+          addLog(`Switched to map: ${map.name}`);
+          updatePlayerUI();
+          renderShopHeroes();
+        };
+        mapButtonsEl.appendChild(btn);
+      });
+    }
+
+    // Render shop heroes (heroes available on current map & unlocked)
+    function renderShopHeroes() {
+      shopHeroesEl.innerHTML = '';
+      const availableHeroes = heroes.filter(
+        (hero) =>
+          hero.mapsAllowed.includes(player.currentMap) &&
+          player.level >= hero.unlocksAt &&
+          !player.heroesOwned.includes(hero.id) &&
+          hero.type !== 'starter'
+      );
+      if (availableHeroes.length === 0) {
+        shopHeroesEl.textContent = 'No heroes available to buy here.';
+        return;
+      }
+      availableHeroes.forEach((hero) => {
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `
+          <strong>${hero.name}</strong><br/>
+          Price: $${hero.price}<br/>
+          <button ${player.money < hero.price ? 'disabled' : ''}>Buy</button>
+        `;
+        const btn = div.querySelector('button');
+        btn.onclick = () => {
+          if (player.money >= hero.price) {
+            player.money -= hero.price;
+            player.heroesOwned.push(hero.id);
+            addLog(`Bought hero ${hero.name} for $${hero.price}`);
+            updatePlayerUI();
+            renderHeroes();
+            renderShopHeroes();
+          }
+        };
+        shopHeroesEl.appendChild(div);
+      });
+    }
+
+    // Render missions dropdown (only missions player qualifies for)
+    function renderMissions() {
+      missionSelectEl.innerHTML = '';
+      const availableMissions = missions.filter(m => player.level >= m.minLevel);
+      availableMissions.forEach(mission => {
+        const option = document.createElement('option');
+        option.value = mission.id;
+        option.textContent = `${mission.name} (Reward: $${mission.moneyReward}, XP: ${mission.xpReward})`;
+        missionSelectEl.appendChild(option);
+      });
+      if (availableMissions.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = 'No missions available yet.';
+        option.disabled = true;
+        missionSelectEl.appendChild(option);
+        startMissionBtn.disabled = true;
+      } else {
+        startMissionBtn.disabled = false;
+      }
+    }
+
+    // Level up check
+    function checkLevelUp() {
+      const nextLevelXp = xpToNextLevel(player.level);
+      while (player.xp >= nextLevelXp) {
+        player.xp -= nextLevelXp;
+        player.level++;
+        addLog(`Congrats! You leveled up to ${player.level}!`);
+        updatePlayerUI();
+        renderMapButtons();
+        renderShopHeroes();
+        renderMissions();
+      }
+    }
+
+    // Mission start handler
+    startMissionBtn.onclick = () => {
+      if (player.missionInProgress) {
+        alert('Mission in progress. Wait until it finishes.');
+        return;
+      }
+      const missionId = parseInt(missionSelectEl.value);
+      if (!missionId) return;
+      const mission = missions.find(m => m.id === missionId);
+      if (!mission) return;
+
+      player.missionInProgress = true;
+      missionStatusEl.textContent = `Mission "${mission.name}" started...`;
+
+      addLog(`Mission "${mission.name}" started.`);
+
+      // Simulate mission time with setTimeout (5 seconds)
+      setTimeout(() => {
+        player.money += mission.moneyReward;
+        player.xp += mission.xpReward;
+        missionStatusEl.textContent = `Mission "${mission.name}" completed! +$${mission.moneyReward} and +${mission.xpReward} XP`;
+        addLog(`Mission "${mission.name}" completed! Earned $${mission.moneyReward} and ${mission.xpReward} XP.`);
+        player.missionInProgress = false;
+        updatePlayerUI();
+        checkLevelUp();
+        renderShopHeroes();
+      }, 5000);
+    };
+
+    // Gacha price fixed
+    const gachaPrice = 100;
+    gachaPriceEl.textContent = gachaPrice;
+
+    // Gacha roll handler (random hero for current map)
+    buyGachaBtn.onclick = () => {
+      if (player.money < gachaPrice) {
+        alert('Not enough money for gacha.');
+        return;
+      }
+      player.money -= gachaPrice;
+
+      // Pick random hero eligible for current map & unlocked & not owned
+      const possibleHeroes = heroes.filter(
+        (hero) =>
+          hero.mapsAllowed.includes(player.currentMap) &&
+          player.level >= hero.unlocksAt &&
+          !player.heroesOwned.includes(hero.id)
+      );
+
+      if (possibleHeroes.length === 0) {
+        gachaResultEl.textContent = 'No new heroes available in gacha for this map.';
+        updatePlayerUI();
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * possibleHeroes.length);
+      const heroWon = possibleHeroes[randomIndex];
+
+      player.heroesOwned.push(heroWon.id);
+      gachaResultEl.textContent = `You got hero: ${heroWon.name}!`;
+      addLog(`Gacha roll: Won hero ${heroWon.name}`);
+
+      updatePlayerUI();
+      renderHeroes();
+      renderShopHeroes();
+    };
+
+    // Initialization
+    function init() {
+      updatePlayerUI();
+      renderHeroes();
+      renderShopHeroes();
+      renderMissions();
+      renderMapButtons();
+      addLog('Welcome to Idle Superhero Tycoon! Start playing by selecting missions or buying heroes.');
+    }
+
+    init();
+  </script>
+</body>
+</html>
