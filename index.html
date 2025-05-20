@@ -5,31 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Idle Superhero Tycoon game. Collect, upgrade, and assign heroes of different classes to missions!" />
   <title>Idle Superhero Tycoon</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --tech-color: #4fc3f7;
       --magic-color: #ba68c8;
       --strength-color: #ff7043;
       --speed-color: #aed581;
+      --accent: #ffeb3b;
       --bg-main: #111;
-      --bg-section: #222;
-      --bg-card: #333;
+      --bg-section: #1a1a1a;
+      --bg-card: #23272f;
       --text-main: #fff;
+      --shadow: 0 2px 8px 0 rgba(0,0,0,0.11);
     }
-    body { font-family: sans-serif; background: var(--bg-main); color: var(--text-main); margin: 0; padding: 0; }
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      letter-spacing: 0.02em;
+    }
     main { max-width: 1200px; margin: auto; padding: 20px; }
-    h1 { text-align: center; margin-bottom: 10px; }
-    section { margin-top: 30px; background: var(--bg-section); padding: 20px; border-radius: 10px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-    button { padding: 10px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover:not(:disabled) { background: #666; }
-    .hero, .mission, .shop-item, .gacha-result, .map-button {
-      background: var(--bg-card); padding: 10px; border-radius: 10px; text-align: center;
+    h1 { text-align: center; margin-bottom: 10px; letter-spacing: 0.06em;}
+    section {
+      margin-top: 30px;
+      background: var(--bg-section);
+      padding: 24px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 18px;
+    }
+    button {
+      padding: 12px;
+      background: var(--accent);
+      color: #222;
+      border: none;
+      border-radius: 6px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 4px 0 rgba(0,0,0,0.08);
+    }
+    button:hover:not(:disabled) {
+      background: #ffd600;
+      color: #111;
+      box-shadow: 0 4px 12px 0 rgba(0,0,0,0.16);
+    }
+    .hero, .mission, .shop-item, .gacha-result, .map-button, .upgrade-item {
+      background: var(--bg-card);
+      padding: 13px 10px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .hero:hover, .mission:hover, .shop-item:hover, .gacha-result:hover, .map-button:hover, .upgrade-item:hover {
+      transform: translateY(-3px) scale(1.025);
+      box-shadow: 0 4px 16px 0 rgba(0,0,0,0.18);
     }
     .locked { opacity: 0.4; cursor: not-allowed; }
-    #log-content { max-height: 200px; overflow-y: auto; background: var(--bg-main); padding: 10px; border-radius: 5px; }
-    .hero-assignment { margin-top: 10px; }
-    .save-load-btn { margin: 5px 10px 5px 0; }
+    #log-content {
+      max-height: 200px;
+      overflow-y: auto;
+      background: #181818;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.96em;
+      box-shadow: var(--shadow);
+    }
     .class { font-weight: bold; display: inline-block; min-width: 65px; }
     .class.tech { color: var(--tech-color); }
     .class.magic { color: var(--magic-color); }
@@ -88,6 +139,11 @@
       </select>
       <div class="grid" id="shop-heroes"></div>
     </section>
+    <!-- Research Lab Section -->
+    <section aria-labelledby="lab-title" id="lab">
+      <h2 id="lab-title">Research Lab</h2>
+      <div class="grid" id="upgrade-list"></div>
+    </section>
     <section aria-labelledby="missions-title" id="missions">
       <h2 id="missions-title">Missions</h2>
       <div class="grid" id="missions-list"></div>
@@ -133,7 +189,6 @@
     }));
 
     // --- Missions (50) ---
-    // [Truncated for brevity in this response: the missionNamesPerMap and mission creation logic are unchanged from your file]
     const missionNamesPerMap = [
       ["Stop the Bank Heist", "Rescue the Mayor", "Defuse the Skyscraper Bomb", "Intercept Midnight Robbery", "Save the Runaway Train"],
       ["Infiltrate the Syndicate", "Shadow Alley Chase", "Break the Smuggling Ring", "Decode Secret Messages", "Silent Sabotage"],
@@ -158,7 +213,7 @@
         missions.push({
           id: missionId,
           name: missionNamesPerMap[mapIdx][i],
-          xpReward: 10 + mapIdx * 5 + i, // scaling rewards
+          xpReward: 10 + mapIdx * 5 + i,
           moneyReward: 25 + mapIdx * 10 + i * 3,
           minLevel: 1 + mapIdx * LEVELS_PER_MAP,
           baseDuration: 5 + mapIdx + i
@@ -175,6 +230,7 @@
       heroesOwned: [1],
       currentMap: maps[0].name,
       heroMissions: {}, // heroId: {missionId, timeLeft, inProgress}
+      incomeBoost: 1
     };
 
     // --- UI elements ---
@@ -193,6 +249,59 @@
     const resetBtn = document.getElementById('reset-btn');
     const totalMpsEl = document.getElementById('total-mps');
     const classFilterEl = document.getElementById('class-filter');
+    const upgradeListEl = document.getElementById('upgrade-list');
+
+    // --- Research Lab Upgrades ---
+    const upgrades = [
+      {
+        id: 1,
+        name: "Boost Hero Income +10%",
+        desc: "All heroes earn 10% more money.",
+        cost: 500,
+        purchased: false,
+        apply(player) { player.incomeBoost *= 1.10; }
+      },
+      {
+        id: 2,
+        name: "Boost Hero Income +25%",
+        desc: "All heroes earn 25% more money.",
+        cost: 2500,
+        purchased: false,
+        apply(player) { player.incomeBoost *= 1.25; }
+      },
+      {
+        id: 3,
+        name: "Boost Hero Income +50%",
+        desc: "All heroes earn 50% more money.",
+        cost: 10000,
+        purchased: false,
+        apply(player) { player.incomeBoost *= 1.50; }
+      }
+    ];
+
+    function updateLabUI() {
+      upgradeListEl.innerHTML = '';
+      upgrades.forEach(upg => {
+        const div = document.createElement('div');
+        div.className = 'upgrade-item';
+        div.innerHTML = `<strong>${upg.name}</strong><br>
+          <span style="font-size:0.95em">${upg.desc}</span><br>
+          Cost: $${upg.cost}<br>
+          <button ${upg.purchased || player.money < upg.cost ? 'disabled' : ''}>
+            ${upg.purchased ? 'Purchased' : 'Buy'}
+          </button>`;
+        div.querySelector('button').onclick = function() {
+          if (player.money >= upg.cost && !upg.purchased) {
+            player.money -= upg.cost;
+            upg.purchased = true;
+            upg.apply(player);
+            addLog(`Research purchased: ${upg.name}`);
+            updateAll();
+          }
+        };
+        upgradeListEl.appendChild(div);
+      });
+    }
 
     function xpToNextLevel(level) {
       return 100 + (level - 1) * 50;
@@ -213,9 +322,10 @@
         const data = localStorage.getItem('idle-superhero-save');
         if (data) {
           const parsed = JSON.parse(data);
-          // Optional: basic validation
           if (typeof parsed === "object" && parsed.level && parsed.heroesOwned) {
             player = parsed;
+            // Patch: if old saves lack incomeBoost, set it to 1
+            if (!player.incomeBoost) player.incomeBoost = 1;
             addLog('Game loaded!');
             updateAll();
           } else {
@@ -256,7 +366,9 @@
           MPS: $${hero.mps}`;
         heroesListEl.appendChild(div);
       });
-      totalMpsEl.textContent = totalMps;
+      // Apply upgrade boost
+      const boost = player.incomeBoost || 1;
+      totalMpsEl.textContent = (totalMps * boost).toFixed(2);
     }
     classFilterEl.onchange = updateShopUI;
     function updateShopUI() {
@@ -362,6 +474,7 @@
       updateShopUI();
       updateMapButtonsUI();
       updateMissionsUI();
+      updateLabUI();
     }
     // Hero income (idle)
     setInterval(() => {
@@ -370,9 +483,11 @@
         const hero = heroes.find(h => h.id === id);
         if (hero) totalMps += hero.mps;
       });
-      player.money += totalMps / 2;
+      // Apply upgrade boost
+      const boost = player.incomeBoost || 1;
+      player.money += totalMps * boost / 2;
       moneyEl.textContent = player.money.toFixed(2);
-      totalMpsEl.textContent = totalMps;
+      totalMpsEl.textContent = (totalMps * boost).toFixed(2);
     }, 500);
 
     function startHeroMissionTimer(heroId) {
