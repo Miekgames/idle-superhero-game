@@ -1161,5 +1161,122 @@ function stopAutoGrind() {
   autoGrindInterval = null;
 }
   </script>
+  <script>
+// --- Crash Handler for Idle Superhero Game ---
+
+// 1. Store game state for recovery (customize this for your actual game state logic)
+function saveGameState() {
+    try {
+        if(window.saveBtn && typeof saveBtn.onclick === "function") {
+            // Try using the game's own save logic if available
+            saveBtn.onclick();
+        } else if(window.player) {
+            localStorage.setItem('gameStateBackup', JSON.stringify(window.player));
+        }
+    } catch (e) {
+        // Ignore save errors in crash context
+    }
+}
+
+// 2. Global JS error handler
+window.onerror = function(message, source, lineno, colno, error) {
+    saveGameState();
+    showCrashDialog('A critical error occurred: ' + message + ' at ' + source + ':' + lineno);
+    reportError({message, source, lineno, colno, error});
+    return false; // Allow the error to show in the console as well
+};
+
+// 3. Unhandled promise rejections
+window.onunhandledrejection = function(event) {
+    saveGameState();
+    showCrashDialog('A critical error occurred: ' + event.reason);
+    reportError({reason: event.reason});
+};
+
+// 4. UI responsiveness check
+let lastTick = Date.now();
+function tick() {
+    lastTick = Date.now();
+}
+setInterval(function() {
+    if(Date.now() - lastTick > 5000) { // If main loop hasn't ticked in 5 seconds
+        saveGameState();
+        showCrashDialog('The game appears to have frozen. You can try reloading.');
+        reportError({message: "Freeze detected"});
+    }
+}, 6000);
+// Important: Call tick() in your main game loop—see below
+
+// 5. Asset loading error handler
+window.addEventListener('error', function(e) {
+    if (e.target.tagName && (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT')) {
+        showCrashDialog('A resource failed to load: ' + e.target.src);
+        reportError({resource: e.target.src});
+    }
+}, true);
+
+// 6. Crash dialog UI
+function showCrashDialog(msg) {
+    if(document.getElementById('crash-dialog')) return; // Only show once
+    let div = document.createElement('div');
+    div.id = 'crash-dialog';
+    div.style.position = 'fixed';
+    div.style.top = '0';
+    div.style.left = '0';
+    div.style.width = '100vw';
+    div.style.height = '100vh';
+    div.style.background = 'rgba(0,0,0,0.85)';
+    div.style.color = 'white';
+    div.style.zIndex = 99999;
+    div.style.display = 'flex';
+    div.style.flexDirection = 'column';
+    div.style.justifyContent = 'center';
+    div.style.alignItems = 'center';
+    div.innerHTML = `
+        <h1>⚠️ Crash Detected</h1>
+        <p style="max-width:600px">${msg}</p>
+        <button onclick="location.reload()">Reload Game</button>
+        <button onclick="tryRestoreGameState()">Restore Last Save</button>
+    `;
+    document.body.appendChild(div);
+}
+
+// 7. Error reporting (you can send to your server, or just log)
+function reportError(err) {
+    // Example: send to a server endpoint, or just log
+    console.error("Crash handler caught:", err);
+    // fetch('/report-error', {method:'POST',body:JSON.stringify(err)});
+}
+
+// 8. Restore state
+window.tryRestoreGameState = function() {
+    let data = localStorage.getItem('gameStateBackup');
+    if(data && window.loadBtn && typeof loadBtn.onclick === "function") {
+        // Use the game's own load logic if available
+        loadBtn.onclick();
+        location.reload();
+    } else if (data && window.player) {
+        Object.assign(window.player, JSON.parse(data));
+        location.reload();
+    } else {
+        alert("No backup found or no loadGame function available.");
+    }
+};
+
+// 9. Integrate with your game loop
+// Call tick() inside your main game update/render function. Example:
+if (typeof requestAnimationFrame === "function") {
+    // Wrap the game's gameLoop with tick
+    if (typeof gameLoop === "function") {
+        const oldGameLoop = gameLoop;
+        window.gameLoop = function() {
+            tick();
+            oldGameLoop();
+        };
+    }
+    // If you use a different loop, just call tick() once per frame instead!
+}
+
+</script>
 </body>
 </html>
