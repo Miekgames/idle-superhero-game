@@ -222,6 +222,14 @@
       <button class="save-load-btn" id="load-btn" aria-label="Load Game">Load Game</button>
       <button class="save-load-btn" id="reset-btn" aria-label="Reset Game">Reset</button>
     </section>
+    <!-- Developer/Auto Controls -->
+<div id="dev-controls" style="margin:18px 0 0 0; display:flex; gap:8px; align-items:center;">
+  <input type="text" id="playerNameInput" placeholder="Set Name..." style="padding:6px; border-radius:4px; border:none;">
+  <button id="setNameBtn" style="padding:6px 14px;">Set Name</button>
+  <button id="maxButton" style="display:none; padding:6px 14px; background:#d32f2f; color:white; border:none; border-radius:4px; font-weight:bold;">MAX</button>
+  <button id="autoGrindButton" style="padding:6px 14px; background:#1976d2; color:white; border:none; border-radius:4px; font-weight:bold;">Auto-Grind: OFF</button>
+</div>
+<p style="margin:7px 0 0 0">Name: <span id="currentPlayerName" style="font-weight:bold;color:var(--accent);">Anonymous</span></p>
     <section id="log-section">
       <button id="toggle-log-btn" aria-expanded="true">Hide Log</button>
       <h2 style="display:inline-block">Game Log</h2>
@@ -1010,6 +1018,148 @@
       addLog("Game started!");
     }
     init();
+    // === NAME, MAX, AUTO-GRIND SYSTEM ===
+
+let playerName = "";
+let autoGrindActive = false;
+let autoGrindInterval = null;
+
+function setPlayerName() {
+  playerName = document.getElementById('playerNameInput').value.trim();
+  document.getElementById('currentPlayerName').textContent = playerName || "Anonymous";
+  if (playerName.toLowerCase() === "developer") {
+    document.getElementById('maxButton').style.display = 'inline-block';
+  } else {
+    document.getElementById('maxButton').style.display = 'none';
+  }
+}
+document.getElementById('setNameBtn').onclick = setPlayerName;
+document.getElementById('playerNameInput').addEventListener('keyup', function(e) {
+  if (e.key === 'Enter') setPlayerName();
+});
+
+document.getElementById('maxButton').onclick = function() {
+  if (confirm("Max out everything? This cannot be undone!")) {
+    player.level = 9999;
+    player.xp = 9999999999;
+    player.money = 1e100;
+    player.incomeBoost = 1e9;
+    player.missionBoost = 1e9;
+    player.techBoost = 100;
+    player.magicBoost = 100;
+    player.strengthBoost = 100;
+    player.speedBoost = 100;
+    player.heroesOwned = heroes.map(h => h.id);
+    Object.keys(player.resources).forEach(k => player.resources[k] = 9999);
+    Object.keys(player.craftedItems).forEach(k => player.craftedItems[k] = 999);
+    upgrades.forEach(u => {
+      u.purchased = true;
+      if (typeof u.apply === "function") u.apply(player);
+    });
+    player.currentMap = maps[maps.length-1].name;
+    player.heroMissions = {};
+    player.heroesOwned.forEach(heroId => {
+      const bestMission = missions.filter(m => player.level >= m.minLevel).slice(-1)[0];
+      player.heroMissions[heroId] = { missionId: bestMission?.id, inProgress: false, timeLeft: 0 };
+    });
+    monsterStates = getMonsterListForPlayerLevel(player.level).map(m => ({
+      ...m,
+      currentHealth: 0
+    }));
+    updateAll();
+    addLog("DEVELOPER MODE: Everything maxed out!");
+    alert("Everything is maxed out!");
+  }
+};
+
+document.getElementById('autoGrindButton').onclick = function() {
+  autoGrindActive = !autoGrindActive;
+  this.textContent = 'Auto-Grind: ' + (autoGrindActive ? 'ON' : 'OFF');
+  if (autoGrindActive) startAutoGrind();
+  else stopAutoGrind();
+};
+
+function startAutoGrind() {
+  if (autoGrindInterval) clearInterval(autoGrindInterval);
+  autoGrindInterval = setInterval(() => {
+    // Auto-complete the best mission for each hero
+    player.heroesOwned.forEach(heroId => {
+      const hero = heroes.find(h => h.id === heroId);
+      if (!hero) return;
+      let assign = player.heroMissions[heroId] || {};
+      const availableMissions = missions.filter(m => player.level >= m.minLevel);
+      if (!availableMissions.length) return;
+      const bestMission = availableMissions[availableMissions.length-1];
+      if (!assign.inProgress) {
+        assign.missionId = bestMission.id;
+        assign.inProgress = false;
+        assign.timeLeft = 0;
+        let missionMoney = bestMission.moneyReward * (player.missionBoost || 1);
+        player.money += missionMoney;
+        player.xp += bestMission.xpReward;
+        addLog(`[Auto-Grind] ${hero.name} auto-completed ${bestMission.name}: +$${missionMoney}, +${bestMission.xpReward}xp`);
+        flashMoney();
+        checkLevelUp();
+        updateAll();
+      }
+      player.heroMissions[heroId] = assign;
+    });
+    // Auto-fight best available monster
+    const monsters = getMonsterListForPlayerLevel(player.level);
+    let bestIdx = monsters.length-1;
+    if (monsterStates.length !== monsters.length) {
+      monsterStates = monsters.map(m => ({
+        ...m,
+        currentHealth: m.maxHealth
+      }));
+    }
+    let monster = monsterStates[bestIdx];
+    if (monster && monster.currentHealth > 0) {
+      let power = 0;
+      player.heroesOwned.forEach(id => {
+        const hero = heroes.find(h => h.id === id);
+        if (!hero) return;
+        let classBoost = 1;
+        if (hero.class === "Tech") classBoost = player.techBoost || 1;
+        if (hero.class === "Magic") classBoost = player.magicBoost || 1;
+        if (hero.class === "Strength") classBoost = player.strengthBoost || 1;
+        if (hero.class === "Speed") classBoost = player.speedBoost || 1;
+        power += hero.mps * classBoost;
+      });
+      power += (player.craftedItems.sword || 0) * 7;
+      power += (player.craftedItems.power || 0) * 15;
+      let crit = false;
+      if ((player.craftedItems.dagger || 0) > 0) {
+        for (let i=0;i<player.craftedItems.dagger;i++) {
+          if (Math.random() < 0.07) { crit = true; break; }
+        }
+      }
+      if (crit) power = Math.round(power * 1.3);
+      let damage = Math.max(1, Math.round(power / 3));
+      monster.currentHealth -= damage;
+      if (monster.currentHealth <= 0) {
+        monster.currentHealth = 0;
+        player.xp += monster.xp;
+        player.money += monster.money;
+        addLog(`[Auto-Grind] Defeated ${monster.name}: +$${monster.money}, +${monster.xp}xp`);
+        flashMoney();
+        checkLevelUp();
+        setTimeout(() => {
+          monster.currentHealth = monster.maxHealth;
+          updateMonstersUI();
+        }, 300);
+      } else {
+        addLog(`[Auto-Grind] Hit ${monster.name} for ${damage}${crit?' (CRIT!)':''} (${monster.currentHealth} HP left)`);
+        updateMonstersUI();
+      }
+      updatePlayerUI();
+    }
+  }, 2000);
+}
+function stopAutoGrind() {
+  if (autoGrindInterval) clearInterval(autoGrindInterval);
+  autoGrindInterval = null;
+}
   </script>
 </body>
 </html>
