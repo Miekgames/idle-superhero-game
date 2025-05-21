@@ -611,7 +611,7 @@
       updateMonstersUI();
     }
 
-    // Hero income (idle)
+    // Hero income (idle) with max money cap
     setInterval(() => {
       let totalMps = 0;
       player.heroesOwned.forEach(id => {
@@ -626,7 +626,14 @@
       });
       // Apply upgrade boost
       const boost = player.incomeBoost || 1;
-      player.money += totalMps * boost / 2;
+      let earned = totalMps * boost / 2;
+      // Clamp to not exceed max money
+      const MONEY_CAP = 9999999;
+      if (player.money + earned > MONEY_CAP) {
+        earned = Math.max(0, MONEY_CAP - player.money);
+      }
+      player.money += earned;
+      if (player.money > MONEY_CAP) player.money = MONEY_CAP;
       moneyEl.textContent = player.money.toFixed(2);
       totalMpsEl.textContent = (totalMps * boost).toFixed(2);
     }, 500);
@@ -775,10 +782,15 @@
             addLog(`You defeated ${monster.name}! +$${monster.money} +${monster.xp}xp`);
             flashMoney();
             checkLevelUp();
+            // Reset monster after a short delay
+            setTimeout(() => {
+              monster.currentHealth = monster.maxHealth;
+              updateMonstersUI();
+            }, 600); // 600ms delay for feedback
           } else {
             addLog(`You hit ${monster.name} for ${damage} damage! (${monster.currentHealth} HP left)`);
+            updateMonstersUI();
           }
-          updateMonstersUI();
           updatePlayerUI();
         };
         monsterListEl.appendChild(div);
