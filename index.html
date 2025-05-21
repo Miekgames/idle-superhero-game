@@ -1215,31 +1215,6 @@ window.addEventListener('error', function(e) {
     }
 }, true);
 
-// 6. Crash dialog UI
-function showCrashDialog(msg) {
-    if(document.getElementById('crash-dialog')) return; // Only show once
-    let div = document.createElement('div');
-    div.id = 'crash-dialog';
-    div.style.position = 'fixed';
-    div.style.top = '0';
-    div.style.left = '0';
-    div.style.width = '100vw';
-    div.style.height = '100vh';
-    div.style.background = 'rgba(0,0,0,0.85)';
-    div.style.color = 'white';
-    div.style.zIndex = 99999;
-    div.style.display = 'flex';
-    div.style.flexDirection = 'column';
-    div.style.justifyContent = 'center';
-    div.style.alignItems = 'center';
-    div.innerHTML = `
-        <h1>⚠️ Crash Detected</h1>
-        <p style="max-width:600px">${msg}</p>
-        <button onclick="location.reload()">Reload Game</button>
-        <button onclick="tryRestoreGameState()">Restore Last Save</button>
-    `;
-    document.body.appendChild(div);
-}
 
 // 7. Error reporting (you can send to your server, or just log)
 function reportError(err) {
