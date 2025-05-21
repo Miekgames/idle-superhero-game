@@ -88,6 +88,11 @@
       margin-bottom: 8px;
     }
     #log-section[hidden] { display: none; }
+    /* For new button */
+    #start-all-missions-btn {
+      margin-bottom: 15px;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -148,6 +153,7 @@
     </section>
     <section aria-labelledby="missions-title" id="missions">
       <h2 id="missions-title">Missions</h2>
+      <button id="start-all-missions-btn">Start All Missions</button> <!-- === NEW Button -->
       <div class="grid" id="missions-list"></div>
     </section>
   </main>
@@ -186,9 +192,10 @@
       class: heroClasses[i % heroClasses.length]
     }));
 
-    // --- Missions (50) ---
+    // --- Missions (EXPAND HERE) ---
     const missionNamesPerMap = [
-      ["Stop the Bank Heist", "Rescue the Mayor", "Defuse the Skyscraper Bomb", "Intercept Midnight Robbery", "Save the Runaway Train"],
+      ["Stop the Bank Heist", "Rescue the Mayor", "Defuse the Skyscraper Bomb", "Intercept Midnight Robbery", "Save the Runaway Train",
+        "Save the Cat from a Tree", "Repair the Broken Bridge"], // Added two more as an example (expand as you like)
       ["Infiltrate the Syndicate", "Shadow Alley Chase", "Break the Smuggling Ring", "Decode Secret Messages", "Silent Sabotage"],
       ["Guard the Neon Docks", "Battle the Pirate Crew", "Protect Cargo Ships", "Halt Black Market Deal", "Rescue Hostages at Pier 9"],
       ["Retrieve Crystal Shards", "Defeat the Cave Beast", "Rescue Trapped Miners", "Map the Hidden Passages", "Secure the Cavern Entrance"],
@@ -234,6 +241,7 @@
       magicBoost: 1,
       strengthBoost: 1,
       speedBoost: 1
+      // upgradesPurchased will be added automatically if present in save
     };
 
     // --- UI elements ---
@@ -255,6 +263,7 @@
     const logContentEl = document.getElementById('log-content');
     const logSectionEl = document.getElementById('log-section');
     const toggleLogBtn = document.getElementById('toggle-log-btn');
+    const startAllMissionsBtn = document.getElementById('start-all-missions-btn'); // === NEW
 
     // --- Research Lab Upgrades ---
     const upgrades = [
@@ -409,6 +418,7 @@
       });
     }
 
+    // --- MISSIONS UI ---
     function updateMissionsUI() {
       missionsListEl.innerHTML = '';
       player.heroesOwned.forEach(heroId => {
@@ -457,9 +467,25 @@
       });
     }
 
+    // === NEW: Start All Missions Button functionality
+    startAllMissionsBtn.onclick = function() {
+      player.heroesOwned.forEach(heroId => {
+        const assign = player.heroMissions[heroId] || {};
+        if (!assign.inProgress && assign.missionId) {
+          assign.inProgress = true;
+          const base = missions.find(m=>m.id===assign.missionId);
+          assign.timeLeft = base.baseDuration;
+          player.heroMissions[heroId] = assign;
+          addLog(`${heroes.find(h=>h.id===heroId).name} started ${base.name}.`);
+          startHeroMissionTimer(heroId);
+        }
+      });
+      updateMissionsUI();
+    };
+
     function updateLabUI() {
       upgradeListEl.innerHTML = '';
-      upgrades.forEach(upg => {
+      upgrades.forEach((upg, idx) => {
         const div = document.createElement('div');
         div.className = 'upgrade-item';
         div.innerHTML = `<strong>${upg.name}</strong><br>
@@ -527,7 +553,7 @@
           let missionMoney = base.moneyReward * (player.missionBoost || 1);
           player.money += missionMoney;
           player.xp += base.xpReward;
-          assign.missionId = null;
+          // assign.missionId = null; // Don't clear - dropdown stays selected!
           checkLevelUp();
           updateAll();
         } else {
@@ -559,8 +585,9 @@
       logContentEl.scrollTop = logContentEl.scrollHeight;
     }
 
-    // Save/load/reset
+    // === UPDATED: Save/load/reset to include upgrades state!
     saveBtn.onclick = function() {
+      player.upgradesPurchased = upgrades.map(u => u.purchased); // Save upgrade states
       localStorage.setItem('idle-superhero-save', JSON.stringify(player));
       addLog('Game saved!');
     };
@@ -568,6 +595,13 @@
       const data = localStorage.getItem('idle-superhero-save');
       if (data) {
         Object.assign(player, JSON.parse(data));
+        // Restore upgrades
+        if (player.upgradesPurchased) {
+          player.upgradesPurchased.forEach((p, i) => {
+            upgrades[i].purchased = p;
+            if (p) upgrades[i].apply(player);
+          });
+        }
         addLog('Game loaded!');
         updateAll();
       }
