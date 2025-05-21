@@ -821,7 +821,7 @@
       const boost = player.incomeBoost || 1;
       let earned = totalMps * boost / 2;
       // Clamp to not exceed max money
-      const MONEY_CAP = 9999999;
+      const MONEY_CAP = 999999999999999999999999999999999999999999999999999999999999999;
       if (player.money + earned > MONEY_CAP) {
         earned = Math.max(0, MONEY_CAP - player.money);
       }
