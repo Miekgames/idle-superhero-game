@@ -137,11 +137,7 @@
     <section aria-labelledby="missions-title" id="missions">
       <h2 id="missions-title">Missions</h2>
       <div class="grid" id="missions-list"></div>
-    </section>
-    <section aria-labelledby="log-title" id="log">
-      <h2 id="log-title">Log</h2>
-      <div id="log-content" aria-live="polite"></div>
-    </section>
+   
   </main>
   <script>
     // --- Constants and Data ---
@@ -203,7 +199,7 @@
         missions.push({
           id: missionId,
           name: missionNamesPerMap[mapIdx][i],
-          xpReward: 10 + mapIdx * 5 + i,
+          xpReward: 20 + mapIdx * 5 + i,
           moneyReward: 25 + mapIdx * 10 + i * 3,
           minLevel: 1 + mapIdx * LEVELS_PER_MAP,
           baseDuration: 5 + mapIdx + i
@@ -238,7 +234,6 @@
     const shopHeroesEl = document.getElementById('shop-heroes');
     const missionsListEl = document.getElementById('missions-list');
     const mapButtonsEl = document.getElementById('map-buttons');
-    const logContentEl = document.getElementById('log-content');
     const saveBtn = document.getElementById('save-btn');
     const loadBtn = document.getElementById('load-btn');
     const resetBtn = document.getElementById('reset-btn');
@@ -314,11 +309,6 @@
       }
     ];
 
-    // --- Utility functions ---
-    function addLog(msg) {
-      logContentEl.innerHTML = `<div>${msg}</div>` + logContentEl.innerHTML;
-    }
-
     function updatePlayerUI() {
       levelEl.textContent = player.level;
       xpEl.textContent = player.xp;
@@ -379,7 +369,6 @@
           if (player.money >= hero.price) {
             player.money -= hero.price;
             player.heroesOwned.push(hero.id);
-            addLog(`Bought hero ${hero.name} (${hero.class}) for $${hero.price}`);
             updateAll();
           }
         };
@@ -397,8 +386,7 @@
         btn.disabled = !unlocked;
         btn.onclick = () => {
           if (player.currentMap === map.name) return;
-          player.currentMap = map.name;
-          addLog(`Switched to map: ${map.name}`);
+          player.currentMap = map.name
           updatePlayerUI();
           updateShopUI();
         };
@@ -470,7 +458,6 @@
             player.money -= upg.cost;
             upg.purchased = true;
             upg.apply(player);
-            addLog(`Research purchased: ${upg.name}`);
             updateAll();
           }
         };
@@ -525,7 +512,6 @@
           let missionMoney = base.moneyReward * (player.missionBoost || 1);
           player.money += missionMoney;
           player.xp += base.xpReward;
-          addLog(`${heroes.find(h=>h.id===heroId).name} finished ${base.name}! +$${missionMoney.toFixed(2)}, +${base.xpReward} XP`);
           assign.missionId = null;
           checkLevelUp();
           updateAll();
@@ -541,7 +527,6 @@
       while (player.xp >= nextLevelXp) {
         player.xp -= nextLevelXp;
         player.level++;
-        addLog(`Level up! Now level ${player.level}`);
         updateMapButtonsUI();
         updateShopUI();
         updateMissionsUI();
@@ -561,9 +546,6 @@
         Object.assign(player, JSON.parse(data));
         addLog('Game loaded!');
         updateAll();
-      } else {
-        addLog('No saved game found.');
-      }
     };
     resetBtn.onclick = function() {
       if (confirm('Reset your progress?')) {
@@ -574,7 +556,6 @@
 
     function init() {
       updateAll();
-      addLog('Welcome to Idle Superhero Tycoon! Assign each hero to a mission.');
     }
     init();
   </script>
