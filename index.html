@@ -1162,96 +1162,57 @@ function stopAutoGrind() {
 }
   </script>
   <script>
-// --- Crash Handler for Idle Superhero Game ---
+// Crash handler: gracefully logs errors and tries a soft reset (no pop-up shown)
+window.onerror = function(message, source, lineno, colno, error) {
+    // Optional: Log error details for diagnostics (e.g., to a backend/server)
+    // sendErrorToServer({ message, source, lineno, colno, error: error ? error.stack : null });
 
-// 1. Store game state for recovery (customize this for your actual game state logic)
-function saveGameState() {
+    // Attempt a soft reset if available
     try {
-        if(window.saveBtn && typeof saveBtn.onclick === "function") {
-            // Try using the game's own save logic if available
-            saveBtn.onclick();
-        } else if(window.player) {
-            localStorage.setItem('gameStateBackup', JSON.stringify(window.player));
+        if (typeof softGameReset === 'function') {
+            softGameReset();
         }
     } catch (e) {
-        // Ignore save errors in crash context
+        // Fail silently
     }
-}
-
-// 2. Global JS error handler
-window.onerror = function(message, source, lineno, colno, error) {
-    saveGameState();
-    showCrashDialog('A critical error occurred: ' + message + ' at ' + source + ':' + lineno);
-    reportError({message, source, lineno, colno, error});
-    return false; // Allow the error to show in the console as well
+    // Prevent default browser error pop-up
+    return true;
 };
 
-// 3. Unhandled promise rejections
-window.onunhandledrejection = function(event) {
-    saveGameState();
-    showCrashDialog('A critical error occurred: ' + event.reason);
-    reportError({reason: event.reason});
-};
+window.addEventListener('unhandledrejection', function(event) {
+    // Optional: Log error details for diagnostics
+    // sendErrorToServer({ message: event.reason && event.reason.message, stack: event.reason && event.reason.stack });
 
-// 4. UI responsiveness check
-let lastTick = Date.now();
-function tick() {
-    lastTick = Date.now();
-}
-setInterval(function() {
-    if(Date.now() - lastTick > 5000) { // If main loop hasn't ticked in 5 seconds
-        saveGameState();
-        showCrashDialog('The game appears to have frozen. You can try reloading.');
-        reportError({message: "Freeze detected"});
+    // Attempt a soft reset if available
+    try {
+        if (typeof softGameReset === 'function') {
+            softGameReset();
+        }
+    } catch (e) {
+        // Fail silently
     }
-}, 6000);
-// Important: Call tick() in your main game loop—see below
+    // Prevent default browser error pop-up
+    event.preventDefault();
+});
 
-// 5. Asset loading error handler
-window.addEventListener('error', function(e) {
-    if (e.target.tagName && (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT')) {
-        showCrashDialog('A resource failed to load: ' + e.target.src);
-        reportError({resource: e.target.src});
-    }
-}, true);
-
-
-// 7. Error reporting (you can send to your server, or just log)
-function reportError(err) {
-    // Example: send to a server endpoint, or just log
-    console.error("Crash handler caught:", err);
-    // fetch('/report-error', {method:'POST',body:JSON.stringify(err)});
+// Example softGameReset implementation (customize as needed for your game)
+function softGameReset() {
+    // Place code here to reset only volatile game state, not player progress
+    // For example, reload main UI or reset timers, but don't wipe out saves!
+    // Example:
+    // if (window.stopAllIntervals) stopAllIntervals();
+    // if (window.reloadGameUI) reloadGameUI();
+    // Optionally: add a subtle status message if desired (not required)
 }
 
-// 8. Restore state
-window.tryRestoreGameState = function() {
-    let data = localStorage.getItem('gameStateBackup');
-    if(data && window.loadBtn && typeof loadBtn.onclick === "function") {
-        // Use the game's own load logic if available
-        loadBtn.onclick();
-        location.reload();
-    } else if (data && window.player) {
-        Object.assign(window.player, JSON.parse(data));
-        location.reload();
-    } else {
-        alert("No backup found or no loadGame function available.");
-    }
-};
-
-// 9. Integrate with your game loop
-// Call tick() inside your main game update/render function. Example:
-if (typeof requestAnimationFrame === "function") {
-    // Wrap the game's gameLoop with tick
-    if (typeof gameLoop === "function") {
-        const oldGameLoop = gameLoop;
-        window.gameLoop = function() {
-            tick();
-            oldGameLoop();
-        };
-    }
-    // If you use a different loop, just call tick() once per frame instead!
-}
-
+// Optional: Example error logging function (requires server-side support)
+// function sendErrorToServer(errorData) {
+//     fetch('/log-error', {
+//         method: 'POST',
+//         body: JSON.stringify(errorData),
+//         headers: { 'Content-Type': 'application/json' }
+//     }).catch(() => {});
+// }
 </script>
 </body>
 </html>
