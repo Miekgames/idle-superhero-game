@@ -1,2 +1,3 @@
 # idle-superhero-game
-# Welcome to the idle superhero tycoon game demo, i will ensure the best playing of this game, but updates may take a while as its just me whos developing the game (and chatgpt) this is the first probably bestest  ai-made game
+# Welcome to the idle superhero tycoon game demo, this is one of the many open source video game projects, here you can unlock heroes, defeat monsters, craft weapons, and more
+# there may be more secrets in the future stay tuned 👀
