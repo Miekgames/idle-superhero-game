@@ -208,6 +208,15 @@
   </style>
 </head>
 <body>
+  <div id="loading-screen" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#1a1a2e; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999;">
+  <h1 style="margin-bottom:0.4em;">Idle Superhero Game</h1>
+  <p style="margin-bottom:1em; font-size:1.1em;">Assemble your heroes, save the city, and grow stronger while you’re away!</p>
+  <div id="loading-tip" style="margin-bottom:1em; font-style:italic;">Tip: Upgrade your heroes regularly for maximum power!</div>
+  <div style="width:300px; height:20px; background:#222; border-radius:10px; overflow:hidden; margin-bottom:0.5em;">
+    <div id="loading-bar" style="height:100%; width:0; background:#00c3ff; transition:width 0.2s;"></div>
+  </div>
+  <div id="loading-percent">0%</div>
+</div>
   <main>
     <header>
       <h1>Idle Superhero Tycoon</h1>
@@ -1213,6 +1222,39 @@ function softGameReset() {
 //         headers: { 'Content-Type': 'application/json' }
 //     }).catch(() => {});
 // }
+</script>
+  <script>
+const tips = [
+  "Tip: Upgrade your heroes regularly for maximum power!",
+  "Tip: Idle income continues even while you're offline.",
+  "Tip: Complete achievements for extra rewards.",
+  "Tip: Some heroes have special abilities—try them all!",
+  "Tip: Don’t forget to check daily rewards."
+];
+
+let tipIndex = 0;
+function cycleTips() {
+  document.getElementById('loading-tip').textContent = tips[tipIndex];
+  tipIndex = (tipIndex + 1) % tips.length;
+}
+setInterval(cycleTips, 2200); // Switch tips every 2.2 seconds
+
+// Simulate loading progress
+let progress = 0;
+function updateLoading() {
+  progress += Math.random() * 10 + 5; // random increment
+  if (progress > 100) progress = 100;
+  document.getElementById('loading-bar').style.width = progress + '%';
+  document.getElementById('loading-percent').textContent = Math.floor(progress) + '%';
+  if (progress < 100) {
+    setTimeout(updateLoading, 250);
+  } else {
+    setTimeout(() => {
+      document.getElementById('loading-screen').style.display = 'none';
+    }, 600);
+  }
+}
+window.addEventListener('DOMContentLoaded', updateLoading);
 </script>
 </body>
 </html>
