@@ -302,6 +302,17 @@
     </section>
   </main>
   <script>
+    window.onload = function() {
+    // Attempt to load saved game from localStorage
+    const savedGame = localStorage.getItem('save');
+    if (savedGame) {
+        // Replace loadGame with whatever function you use to load your save
+        loadGame(JSON.parse(savedGame));
+    } else {
+        // If you have a function to start a new game, you can call it here
+        startNewGame();
+    }
+};
     // --- Constants and Data ---
     const MAP_COUNT = 15;
     const HERO_COUNT = 50;
