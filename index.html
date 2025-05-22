@@ -12,10 +12,6 @@
       --magic-color: #ba68c8;
       --strength-color: #ff7043;
       --speed-color: #aed581;
-  --guardian-color: #ffd700;
-  --elemental-color: #00bcd4;
-  --psychic-color: #e040fb;
-  --cosmic-color: #f44336;
       --accent: #ffeb3b;
       --bg-main: #10131a;
       --bg-section: #181c25;
@@ -255,11 +251,6 @@
     <li><span class="class magic" title="Magic heroes use spells and arcane arts.">Magic</span></li>
     <li><span class="class strength" title="Strength heroes focus on raw power.">Strength</span></li>
     <li><span class="class speed" title="Speed heroes are quick and agile.">Speed</span></li>
-    <!-- Add new hero classes below -->
-    <li><span class="class guardian" title="Guardians shield your team.">Guardian</span></li>
-    <li><span class="class elemental" title="Elementals bring unpredictable power.">Elemental</span></li>
-    <li><span class="class psychic" title="Psychics manipulate outcomes.">Psychic</span></li>
-    <li><span class="class cosmic" title="Cosmic heroes give global boosts.">Cosmic</span></li>
   </ul>
 </section>
     <section aria-labelledby="map-switch-title" id="map-switch">
@@ -364,10 +355,6 @@ const heroClasses = [
   { name: "Magic", color: "var(--magic-color)", desc: "Spells and arcane arts. Chance to double XP or money, has 'Arcane Surge' skill." },
   { name: "Strength", color: "var(--strength-color)", desc: "Raw power. Higher flat MPS, 'Smash' for bonus cash." },
   { name: "Speed", color: "var(--speed-color)", desc: "Quick and agile. Shorter mission times, 'Dash' for instant money." },
-  { name: "Guardian", color: "var(--guardian-color)", desc: "Defensive. Reduces penalties, 'Shield All' to boost hero defenses." },
-  { name: "Elemental", color: "var(--elemental-color)", desc: "Unpredictable. Triggers random elemental bonuses, 'Elemental Surge' for special effects." },
-  { name: "Psychic", color: "var(--psychic-color)", desc: "Mind powers. Can reroll mission rewards, 'Mind Twist' to manipulate outcomes." },
-  { name: "Cosmic", color: "var(--cosmic-color)", desc: "Universal. Rare, global boosts, 'Cosmic Wave' for big bonuses." }
 ];
 
 // Update your hero creation logic to support the new classes (assuming HERO_COUNT and heroNames already set)
