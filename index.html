@@ -451,18 +451,6 @@ function getHeroClassBoost(hero) {
   if (hero.class === "Cosmic") boost *= player.cosmicBoost || 1;
   return boost;
 }
-
-// In your UI rendering, use hero.color for class color, and show hero.desc as a tooltip or info panel.
-    const heroes = Array.from({length: HERO_COUNT}, (_,i) => ({
-      id: i+1,
-      name: heroNames[i],
-      mps: 1 + Math.floor(Math.random()*10) + i,
-      price: 100 + i*50,
-      map: maps[Math.floor(i/(HERO_COUNT/MAP_COUNT))].name,
-      unlockLevel: 1 + Math.floor(i/(HERO_COUNT/MAP_COUNT)) * LEVELS_PER_MAP,
-      class: heroClasses[i % heroClasses.length]
-    }));
-
     // --- Monster Fighting System ---
     const monsterNames = [
       "Street Goon", "Mega Bot", "Arcane Shade", "Steel Serpent", "Crimson Ogre", "Cyber Wraith",
