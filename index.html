@@ -12,6 +12,10 @@
       --magic-color: #ba68c8;
       --strength-color: #ff7043;
       --speed-color: #aed581;
+  --guardian-color: #ffd700;
+  --elemental-color: #00bcd4;
+  --psychic-color: #e040fb;
+  --cosmic-color: #f44336;
       --accent: #ffeb3b;
       --bg-main: #10131a;
       --bg-section: #181c25;
@@ -244,15 +248,20 @@
       <h2 style="display:inline-block">Game Log</h2>
       <div id="log-content"></div>
     </section>
-    <section aria-labelledby="class-legend-title" id="class-legend">
-      <h2 id="class-legend-title">Hero Classes</h2>
-      <ul style="display:flex; gap:24px; list-style:none; padding:0; margin:0;">
-        <li><span class="class tech" title="Technology heroes excel at gadgets and hacking.">Tech</span></li>
-        <li><span class="class magic" title="Magic heroes use spells and arcane arts.">Magic</span></li>
-        <li><span class="class strength" title="Strength heroes focus on raw power.">Strength</span></li>
-        <li><span class="class speed" title="Speed heroes are quick and agile.">Speed</span></li>
-      </ul>
-    </section>
+   <section aria-labelledby="class-legend-title" id="class-legend">
+  <h2 id="class-legend-title">Hero Classes</h2>
+  <ul style="display:flex; gap:24px; list-style:none; padding:0; margin:0;">
+    <li><span class="class tech" title="Technology heroes excel at gadgets and hacking.">Tech</span></li>
+    <li><span class="class magic" title="Magic heroes use spells and arcane arts.">Magic</span></li>
+    <li><span class="class strength" title="Strength heroes focus on raw power.">Strength</span></li>
+    <li><span class="class speed" title="Speed heroes are quick and agile.">Speed</span></li>
+    <!-- Add new hero classes below -->
+    <li><span class="class guardian" title="Guardians shield your team.">Guardian</span></li>
+    <li><span class="class elemental" title="Elementals bring unpredictable power.">Elemental</span></li>
+    <li><span class="class psychic" title="Psychics manipulate outcomes.">Psychic</span></li>
+    <li><span class="class cosmic" title="Cosmic heroes give global boosts.">Cosmic</span></li>
+  </ul>
+</section>
     <section aria-labelledby="map-switch-title" id="map-switch">
       <h2 id="map-switch-title">Maps <span aria-label="Unlock maps by leveling up heroes">(Unlock every few hero levels)</span></h2>
       <div class="grid" id="map-buttons"></div>
@@ -336,7 +345,127 @@
     ];
     while (heroNames.length < HERO_COUNT) heroNames.push("Hero" + (heroNames.length + 1));
 
-    const heroClasses = ["Tech", "Magic", "Strength", "Speed"];
+ // Add new color variables in your <style> section:
+/*
+:root {
+  --tech-color: #4fc3f7;
+  --magic-color: #ba68c8;
+  --strength-color: #ff7043;
+  --speed-color: #aed581;
+  --guardian-color: #ffd700;
+  --elemental-color: #00bcd4;
+  --psychic-color: #e040fb;
+  --cosmic-color: #f44336;
+}
+*/
+
+const heroClasses = [
+  { name: "Tech", color: "var(--tech-color)", desc: "Automation and hacking. Bonus to mission rewards, can 'Hack' to instantly complete missions." },
+  { name: "Magic", color: "var(--magic-color)", desc: "Spells and arcane arts. Chance to double XP or money, has 'Arcane Surge' skill." },
+  { name: "Strength", color: "var(--strength-color)", desc: "Raw power. Higher flat MPS, 'Smash' for bonus cash." },
+  { name: "Speed", color: "var(--speed-color)", desc: "Quick and agile. Shorter mission times, 'Dash' for instant money." },
+  { name: "Guardian", color: "var(--guardian-color)", desc: "Defensive. Reduces penalties, 'Shield All' to boost hero defenses." },
+  { name: "Elemental", color: "var(--elemental-color)", desc: "Unpredictable. Triggers random elemental bonuses, 'Elemental Surge' for special effects." },
+  { name: "Psychic", color: "var(--psychic-color)", desc: "Mind powers. Can reroll mission rewards, 'Mind Twist' to manipulate outcomes." },
+  { name: "Cosmic", color: "var(--cosmic-color)", desc: "Universal. Rare, global boosts, 'Cosmic Wave' for big bonuses." }
+];
+
+// Update your hero creation logic to support the new classes (assuming HERO_COUNT and heroNames already set)
+const heroes = Array.from({ length: HERO_COUNT }, (_, i) => {
+  const heroClass = heroClasses[i % heroClasses.length];
+  return {
+    id: i + 1,
+    name: heroNames[i],
+    mps: 1 + Math.floor(Math.random() * 10 + i), // Adjust as needed for balance
+    price: 100 + i * 50,
+    map: maps[Math.floor(i / (HERO_COUNT / MAP_COUNT))].name,
+    unlockLevel: 1 + Math.floor(i / (HERO_COUNT / MAP_COUNT)) * LEVELS_PER_MAP,
+    class: heroClass.name,
+    color: heroClass.color,
+    desc: heroClass.desc,
+    // Example of adding class-specific skill cooldowns, etc.
+    skillCooldown: 0
+  };
+});
+
+// Example: add a method to trigger class skills (call from UI button)
+function activateHeroSkill(heroId) {
+  const hero = heroes.find(h => h.id === heroId);
+  if (!hero || hero.skillCooldown > 0) return;
+  switch (hero.class) {
+    case "Tech":
+      // Instantly complete a mission (pseudo)
+      completeBestMission(heroId);
+      break;
+    case "Magic":
+      // Double XP/money for limited time
+      player.magicBoost = 2;
+      setTimeout(() => player.magicBoost = 1, 60000); // 1 min
+      break;
+    case "Strength":
+      // Smash: instant cash
+      player.money += hero.mps * 50;
+      break;
+    case "Speed":
+      // Dash: instant MPS gain
+      player.money += hero.mps * 30;
+      break;
+    case "Guardian":
+      // Shield all: reduce mission penalties
+      player.guardianShield = true;
+      setTimeout(() => player.guardianShield = false, 60000);
+      break;
+    case "Elemental":
+      // Elemental surge: random bonus
+      elementalSurge(heroId);
+      break;
+    case "Psychic":
+      // Reroll mission reward
+      rerollMissionReward(heroId);
+      break;
+    case "Cosmic":
+      // Boost all hero MPS for a short period
+      player.cosmicBoost = 2;
+      setTimeout(() => player.cosmicBoost = 1, 60000);
+      break;
+  }
+  hero.skillCooldown = 300; // e.g., 5 min cooldown
+}
+
+// Example: elementalSurge function, customize as needed
+function elementalSurge(heroId) {
+  const effects = [
+    () => player.money += 500, // Fire: money
+    () => player.xp += 100,    // Ice: xp
+    () => player.magicBoost = 2, // Wind: boost
+    () => player.strengthBoost = 2 // Earth: boost
+  ];
+  const effect = effects[Math.floor(Math.random() * effects.length)];
+  effect();
+  setTimeout(() => {
+    player.magicBoost = 1;
+    player.strengthBoost = 1;
+  }, 60000);
+}
+
+// Call activateHeroSkill from a button in your hero UI, e.g.:
+// <button onclick="activateHeroSkill(hero.id)">Use Skill</button>
+
+// In your MPS calculation and boosts, add support for new classes and cosmic boost
+function getHeroClassBoost(hero) {
+  let boost = 1;
+  if (hero.class === "Tech") boost *= player.techBoost || 1;
+  if (hero.class === "Magic") boost *= player.magicBoost || 1;
+  if (hero.class === "Strength") boost *= player.strengthBoost || 1;
+  if (hero.class === "Speed") boost *= player.speedBoost || 1;
+  if (hero.class === "Guardian") boost *= player.guardianBoost || 1;
+  if (hero.class === "Elemental") boost *= player.elementalBoost || 1;
+  if (hero.class === "Psychic") boost *= player.psychicBoost || 1;
+  if (hero.class === "Cosmic") boost *= player.cosmicBoost || 1;
+  return boost;
+}
+
+// In your UI rendering, use hero.color for class color, and show hero.desc as a tooltip or info panel.
     const heroes = Array.from({length: HERO_COUNT}, (_,i) => ({
       id: i+1,
       name: heroNames[i],
