@@ -206,104 +206,163 @@
       100% { background: none; color: inherit; }
     }
     #investigation-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      z-index: 1000;
-      background: #111d;
-      align-items: center;
-      justify-content: center;
-    }
-    #investigation-ui {
-      background: #23272f;
-      padding: 20px;
-      border-radius: 14px;
-      max-width: 95vw;
-    }
-    .investigation-cell { display:inline-block; width:22px; height:22px; text-align:center; }
-    .investigation-player { color: #ffeb3b; font-weight: bold; }
-    .investigation-monster { color: #ff7043; font-weight: bold; }
-    .investigation-thug { color: #ba68c8; font-weight: bold; }
-    .investigation-exit { color: #00e676; font-weight: bold; }
-    .investigation-wall { color: #888; }
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 1000;
+  background: #111d;
+  align-items: center;
+  justify-content: center;
+}
+#investigation-ui {
+  background: #23272f;
+  padding: 20px;
+  border-radius: 14px;
+  max-width: 95vw;
+}
+.investigation-cell { display:inline-block; width:22px; height:22px; text-align:center; }
+.investigation-player { color: #ffeb3b; font-weight: bold; }
+.investigation-monster { color: #ff7043; font-weight: bold; }
+.investigation-thug { color: #ba68c8; font-weight: bold; }
+.investigation-exit { color: #00e676; font-weight: bold; }
+.investigation-wall { color: #888; }
+</style>
   </style>
 </head>
 <body>
 <!-- Loading Screen Start -->
-<div id="loading-screen" style="width:100vw; height:100vh; background:#181c24; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; position:fixed; top:0; left:0; z-index:9999;">
+<div id="loading-screen" style="width:100vw; height:100vh; background:#181c24; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; position:fixed; top:0; left:0; z-index:9999; font-family:sans-serif;">
+  <!-- Game Name -->
   <h1 style="font-size:3rem; margin-bottom:0.5em; letter-spacing:2px;">Idle Superhero Game</h1>
+  
+  <!-- Brief Description -->
   <p style="max-width:500px; text-align:center; margin-bottom:1.5em;">
     Assemble your team of heroes, upgrade their powers, and save the city in this idle adventure! Choose your path: strategic tycoon or epic story mode.
   </p>
+  
+  <!-- Loading Bar -->
   <div style="width:320px; height:22px; background:#333; border-radius:12px; overflow:hidden; margin-bottom:1.2em;">
     <div id="loading-bar" style="width:0%; height:100%; background:#47c7ff; transition:width 0.4s;"></div>
   </div>
   <span id="loading-percent" style="margin-bottom:1.2em;">Loading... 0%</span>
-  <div style="display:flex; gap:18px; margin-bottom:1.5em;">
-    <button id="story-mode-btn">Story Mode</button>
-    <button id="tycoon-mode-btn">Tycoon Mode</button>
-  </div>
+  
+  <!-- Cycling Tips -->
   <div style="width:320px; min-height:40px; background:#23283b; border-radius:8px; padding:10px 18px; margin-bottom:0.5em; font-size:1.05em;">
     <span id="tip-text">Tip: Upgrade your heroes to increase their idle power!</span>
   </div>
 </div>
 <!-- Loading Screen End -->
-
-<main>
-  <header>
-    <h1>Idle Superhero Tycoon</h1>
-  </header>
-  <section aria-labelledby="player-stats-title" id="player-stats">
-    <h2 id="player-stats-title">Player Stats</h2>
-    <p>Level: <span id="level">1</span></p>
-    <p>XP: <span id="xp">0</span> / <span id="xpToLevel">100</span></p>
-    <p>Money: $<span id="money">100</span></p>
-    <p>Current Map: <span id="currentMap">Map 1</span></p>
-    <button class="save-load-btn" id="save-btn" aria-label="Save Game">Save Game</button>
-    <button class="save-load-btn" id="load-btn" aria-label="Load Game">Load Game</button>
-    <button class="save-load-btn" id="reset-btn" aria-label="Reset Game">Reset</button>
-  </section>
-  <div id="dev-controls" style="margin:18px 0 0 0; display:flex; gap:8px; align-items:center;">
-    <input type="text" id="playerNameInput" placeholder="Set Name..." style="padding:6px; border-radius:4px; border:none;">
-    <button id="setNameBtn" style="padding:6px 14px;">Set Name</button>
-    <button id="maxButton" style="display:none; padding:6px 14px; background:#d32f2f; color:white; border:none; border-radius:4px; font-weight:bold;">MAX</button>
-    <button id="autoGrindButton" style="padding:6px 14px; background:#1976d2; color:white; border:none; border-radius:4px; font-weight:bold;">Auto-Grind: OFF</button>
-    <button id="launchAboutBlankBtn" style="padding:6px 14px; background:#8e44ad; color:white; border:none; border-radius:4px; font-weight:bold;">Launch in about:blank</button>
+</div>
+  <main>
+    <header>
+      <h1>Idle Superhero Tycoon</h1>
+    </header>
+    <section aria-labelledby="player-stats-title" id="player-stats">
+      <h2 id="player-stats-title">Player Stats</h2>
+      <p>Level: <span id="level">1</span></p>
+      <p>XP: <span id="xp">0</span> / <span id="xpToLevel">100</span></p>
+      <p>Money: $<span id="money">100</span></p>
+      <p>Current Map: <span id="currentMap">Map 1</span></p>
+      <button class="save-load-btn" id="save-btn" aria-label="Save Game">Save Game</button>
+      <button class="save-load-btn" id="load-btn" aria-label="Load Game">Load Game</button>
+      <button class="save-load-btn" id="reset-btn" aria-label="Reset Game">Reset</button>
+    </section>
+    <!-- Developer/Auto Controls -->
+<div id="dev-controls" style="margin:18px 0 0 0; display:flex; gap:8px; align-items:center;">
+  <input type="text" id="playerNameInput" placeholder="Set Name..." style="padding:6px; border-radius:4px; border:none;">
+  <button id="setNameBtn" style="padding:6px 14px;">Set Name</button>
+  <button id="maxButton" style="display:none; padding:6px 14px; background:#d32f2f; color:white; border:none; border-radius:4px; font-weight:bold;">MAX</button>
+  <button id="autoGrindButton" style="padding:6px 14px; background:#1976d2; color:white; border:none; border-radius:4px; font-weight:bold;">Auto-Grind: OFF</button>
+</div>
+<p style="margin:7px 0 0 0">Name: <span id="currentPlayerName" style="font-weight:bold;color:var(--accent);">Anonymous</span></p>
+    <section id="log-section">
+      <button id="toggle-log-btn" aria-expanded="true">Hide Log</button>
+      <h2 style="display:inline-block">Game Log</h2>
+      <div id="log-content"></div>
+    </section>
+   <section aria-labelledby="class-legend-title" id="class-legend">
+  <h2 id="class-legend-title">Hero Classes</h2>
+  <ul style="display:flex; gap:24px; list-style:none; padding:0; margin:0;">
+    <li><span class="class tech" title="Technology heroes excel at gadgets and hacking.">Tech</span></li>
+    <li><span class="class magic" title="Magic heroes use spells and arcane arts.">Magic</span></li>
+    <li><span class="class strength" title="Strength heroes focus on raw power.">Strength</span></li>
+    <li><span class="class speed" title="Speed heroes are quick and agile.">Speed</span></li>
+  </ul>
+</section>
+    <section aria-labelledby="map-switch-title" id="map-switch">
+      <h2 id="map-switch-title">Maps <span aria-label="Unlock maps by leveling up heroes">(Unlock every few hero levels)</span></h2>
+      <div class="grid" id="map-buttons"></div>
+    </section>
+    <section aria-labelledby="heroes-title" id="heroes">
+      <h2 id="heroes-title">Owned Heroes</h2>
+      <div class="grid" id="heroes-list"></div>
+      <p style="margin-top:10px">Total Money Per Second: $<span id="total-mps">0</span></p>
+    </section>
+    <section aria-labelledby="shop-title" id="shop">
+      <h2 id="shop-title">Hero Shop</h2>
+      <label for="class-filter">Filter by Class:</label>
+      <select id="class-filter" aria-label="Filter heroes by class">
+        <option value="">All</option>
+        <option value="Tech">Tech</option>
+        <option value="Magic">Magic</option>
+        <option value="Strength">Strength</option>
+        <option value="Speed">Speed</option>
+      </select>
+      <div class="grid" id="shop-heroes"></div>
+    </section>
+    <!-- Resource Shop Section -->
+    <section aria-labelledby="shop-resources-title" id="shop-resources">
+      <h2 id="shop-resources-title" class="shop-section-title">Resource Shop</h2>
+      <div class="grid" id="resource-shop-list"></div>
+    </section>
+    <!-- Crafting Section -->
+    <section aria-labelledby="crafting-title" id="crafting">
+      <h2 id="crafting-title" class="craft-title">Crafting</h2>
+      <div id="crafting-resources"></div>
+      <div id="crafting-recipes" class="grid"></div>
+    </section>
+    <!-- Research Lab Section -->
+    <section aria-labelledby="lab-title" id="lab">
+      <h2 id="lab-title">Research Lab</h2>
+      <div class="grid" id="upgrade-list"></div>
+    </section>
+    <section aria-labelledby="missions-title" id="missions">
+      <h2 id="missions-title">Missions</h2>
+      <button id="start-all-missions-btn">Start All Missions</button>
+      <div class="grid" id="missions-list"></div>
+    </section>
+    <!-- MONSTER FIGHTING SYSTEM -->
+    <section aria-labelledby="monster-title" id="monster-arena">
+      <h2 id="monster-title">Monster Arena</h2>
+      <div id="monster-list"></div>
+    </section>
+    <section id="investigation-section">
+  <h2>Investigation Mode</h2>
+  <button id="start-investigation-btn">Start Stealth Mission</button>
+</section>
+    
+<!-- Investigation Mode Modal -->
+<div id="investigation-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;background:#111d;align-items:center;justify-content:center;">
+  <div id="investigation-ui" style="background:#23272f;padding:20px;border-radius:14px;max-width:95vw;">
+    <h3>Investigation Mode</h3>
+    <div id="investigation-status"></div>
+    <div id="investigation-maze" style="font-size:20px;line-height:22px;margin:12px 0;"></div>
+    <button id="close-investigation-btn">Close</button>
   </div>
-  <p style="margin:7px 0 0 0">Name: <span id="currentPlayerName" style="font-weight:bold;color:var(--accent);">Anonymous</span></p>
-  <!-- ... rest of your HTML for log, shop, crafting, missions, etc ... -->
-</main>
-<script>
-window.addEventListener('DOMContentLoaded', function() {
-  // Loading Screen logic
-  const loadingScreen = document.getElementById('loading-screen');
-  const storyBtn = document.getElementById('story-mode-btn');
-  const tycoonBtn = document.getElementById('tycoon-mode-btn');
-  function finishLoadingAndStart(mode) {
-    loadingScreen.style.display = 'none';
-    // Insert your logic for starting the chosen mode here
-  }
-  storyBtn.onclick = function() { finishLoadingAndStart("story"); };
-  tycoonBtn.onclick = function() { finishLoadingAndStart("tycoon"); };
-
-  // about:blank launcher
-  const launchBtn = document.getElementById('launchAboutBlankBtn');
-  if (launchBtn) {
-    launchBtn.onclick = function() {
-      fetch(window.location.pathname)
-        .then(r => r.text())
-        .then(html => {
-          const w = window.open('about:blank');
-          w.document.write(html);
-          w.document.close();
-        })
-        .catch(() => {
-          alert('Could not load the game HTML for about:blank!');
-        });
-    };
-  }
-});
-
+</div>
+  </main>
+  <script>
+    window.onload = function() {
+    // Attempt to load saved game from localStorage
+    const savedGame = localStorage.getItem('save');
+    if (savedGame) {
+        // Replace loadGame with whatever function you use to load your save
+        loadGame(JSON.parse(savedGame));
+    } else {
+        // If you have a function to start a new game, you can call it here
+        startNewGame();
+    }
+};
     // --- Constants and Data ---
     const MAP_COUNT = 15;
     const HERO_COUNT = 50;
@@ -1328,6 +1387,8 @@ function softGameReset() {
 //         headers: { 'Content-Type': 'application/json' }
 //     }).catch(() => {});
 // }
+</script>
+  <script>
     // Loading bar simulation
 let percent = 0;
 const loadingBar = document.getElementById('loading-bar');
