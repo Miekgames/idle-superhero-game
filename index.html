@@ -205,6 +205,28 @@
       0% { background: #ffd600; color: #222; }
       100% { background: none; color: inherit; }
     }
+    #investigation-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 1000;
+  background: #111d;
+  align-items: center;
+  justify-content: center;
+}
+#investigation-ui {
+  background: #23272f;
+  padding: 20px;
+  border-radius: 14px;
+  max-width: 95vw;
+}
+.investigation-cell { display:inline-block; width:22px; height:22px; text-align:center; }
+.investigation-player { color: #ffeb3b; font-weight: bold; }
+.investigation-monster { color: #ff7043; font-weight: bold; }
+.investigation-thug { color: #ba68c8; font-weight: bold; }
+.investigation-exit { color: #00e676; font-weight: bold; }
+.investigation-wall { color: #888; }
+</style>
   </style>
 </head>
 <body>
@@ -300,6 +322,20 @@
       <h2 id="monster-title">Monster Arena</h2>
       <div id="monster-list"></div>
     </section>
+    <section id="investigation-section">
+  <h2>Investigation Mode</h2>
+  <button id="start-investigation-btn">Start Stealth Mission</button>
+</section>
+    
+<!-- Investigation Mode Modal -->
+<div id="investigation-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;background:#111d;align-items:center;justify-content:center;">
+  <div id="investigation-ui" style="background:#23272f;padding:20px;border-radius:14px;max-width:95vw;">
+    <h3>Investigation Mode</h3>
+    <div id="investigation-status"></div>
+    <div id="investigation-maze" style="font-size:20px;line-height:22px;margin:12px 0;"></div>
+    <button id="close-investigation-btn">Close</button>
+  </div>
+</div>
   </main>
   <script>
     window.onload = function() {
@@ -1370,6 +1406,182 @@ function updateLoading() {
   }
 }
 window.addEventListener('DOMContentLoaded', updateLoading);
+    // === Investigation Mode Variables ===
+const investigationModal = document.getElementById('investigation-modal');
+const investigationMazeEl = document.getElementById('investigation-maze');
+const investigationStatusEl = document.getElementById('investigation-status');
+const startInvestigationBtn = document.getElementById('start-investigation-btn');
+const closeInvestigationBtn = document.getElementById('close-investigation-btn');
+
+// Maze legend: 0 = empty, 1 = wall, 2 = player, 3 = exit, 4 = thug, 5 = monster
+let investigationState = null;
+
+function makeMaze(size, numThugs, numMonsters) {
+  // Simple random maze generator (not perfect, but fun for a minigame)
+  const maze = Array(size).fill().map(() => Array(size).fill(0));
+  // Outer walls
+  for (let i=0; i<size; i++) maze[0][i]=maze[size-1][i]=maze[i][0]=maze[i][size-1]=1;
+  // Add some inner walls
+  for (let i=0;i<size*size/5;i++) {
+    let x=Math.floor(Math.random()*size), y=Math.floor(Math.random()*size);
+    if (maze[y][x]===0) maze[y][x]=1;
+  }
+  // Place player
+  let px=1, py=1; maze[py][px]=2;
+  // Place exit
+  let ex=size-2, ey=size-2; maze[ey][ex]=3;
+  // Place thugs/monsters
+  let enemies = [];
+  for (let t=0; t<numThugs+numMonsters; t++) {
+    let type = t<numThugs ? 4 : 5;
+    let placed = false;
+    while (!placed) {
+      let x = Math.floor(Math.random()*(size-2))+1, y = Math.floor(Math.random()*(size-2))+1;
+      if (maze[y][x]===0) {
+        maze[y][x]=type;
+        // Random initial direction: 0=up, 1=right, 2=down, 3=left
+        enemies.push({x,y,type,dir:Math.floor(Math.random()*4)});
+        placed=true;
+      }
+    }
+  }
+  return {maze, px, py, ex, ey, enemies, moveNum:0, size, finished:false, failed:false};
+}
+
+function renderMaze(state) {
+  let {maze, px, py, ex, ey, enemies, finished, failed} = state;
+  let out = '';
+  for (let y=0;y<maze.length;y++) {
+    for (let x=0;x<maze[y].length;x++) {
+      let cell = maze[y][x];
+      if (x===px && y===py) {
+        out += `<span class="investigation-cell investigation-player">🦸</span>`;
+      } else if (cell===1) {
+        out += `<span class="investigation-cell investigation-wall">⬛</span>`;
+      } else if (cell===3) {
+        out += `<span class="investigation-cell investigation-exit">🚪</span>`;
+      } else if (cell===4) {
+        let enemy = state.enemies.find(e=>e.x===x&&e.y===y&&e.type===4);
+        let emoji = ['👈','👆','👉','👇'][enemy.dir];
+        out += `<span class="investigation-cell investigation-thug">${emoji}</span>`;
+      } else if (cell===5) {
+        let enemy = state.enemies.find(e=>e.x===x&&e.y===y&&e.type===5);
+        let emoji = ['👈','👆','👉','👇'][enemy.dir];
+        out += `<span class="investigation-cell investigation-monster">${emoji}</span>`;
+      } else {
+        out += `<span class="investigation-cell">⬜</span>`;
+      }
+    }
+    out += '<br>';
+  }
+  investigationMazeEl.innerHTML = out;
+  if (finished) {
+    investigationStatusEl.innerHTML = `<b style="color:#0f0">Success!</b> You gained XP and money!`;
+  } else if (failed) {
+    investigationStatusEl.innerHTML = `<b style="color:#f33">Caught!</b> You failed the mission.`;
+  } else {
+    investigationStatusEl.innerHTML = `WASD to move. Sneak behind thugs 👆/👈/👉/👇 or monsters for a secret takedown. Get to 🚪!`;
+  }
+}
+
+function movePlayer(dir) {
+  if (!investigationState || investigationState.finished || investigationState.failed) return;
+  let dx=0, dy=0;
+  if (dir==='w') dy=-1;
+  if (dir==='s') dy=1;
+  if (dir==='a') dx=-1;
+  if (dir==='d') dx=1;
+  let {maze, px, py, enemies, size} = investigationState;
+  let nx=px+dx, ny=py+dy;
+  if (maze[ny][nx]===1) return; // wall
+  // Check for enemy
+  let enemy = enemies.find(e=>e.x===nx&&e.y===ny);
+  if (enemy) {
+    // Are we attacking from behind or side? (not in front)
+    let facing = enemy.dir;
+    let rel = (facing===0 && dy===1) || (facing===1 && dx===-1) || (facing===2 && dy===-1) || (facing===3 && dx===1);
+    if (!rel) {
+      // Successfully sneak attack
+      maze[ny][nx]=0;
+      investigationState.enemies = enemies.filter(e=>!(e.x===nx && e.y===ny));
+      px=nx; py=ny;
+    } else {
+      // Caught!
+      investigationState.failed = true;
+      renderMaze(investigationState);
+      return;
+    }
+  } else {
+    // Move player
+    px=nx; py=ny;
+    // Check for exit
+    if (maze[py][px]===3 && investigationState.enemies.length===0) {
+      investigationState.finished = true;
+      // Reward player
+      let rewardXP = 25 + investigationState.size*5;
+      let rewardMoney = 50 + investigationState.size*8;
+      player.xp += rewardXP;
+      player.money += rewardMoney;
+      addLog(`Investigation Mode complete! +$${rewardMoney}, +${rewardXP}xp`);
+      updateAll();
+    }
+  }
+  investigationState.px=px; investigationState.py=py; investigationState.moveNum++;
+  // Move enemies (rotate/look around)
+  for (let e of investigationState.enemies) {
+    if (Math.random()<0.3) { // About every 3rd move: rotate randomly
+      e.dir = (e.dir + (Math.random()<0.5?-1:1)+4)%4;
+    }
+    // (Optional: move enemy forward with small chance)
+    if (Math.random()<0.1) {
+      let dxy = [[0,-1],[1,0],[0,1],[-1,0]][e.dir];
+      let ex2 = e.x + dxy[0], ey2 = e.y + dxy[1];
+      if (maze[ey2][ex2]===0 && !(ex2===investigationState.px&&ey2===investigationState.py)) {
+        maze[e.y][e.x]=0;
+        e.x=ex2; e.y=ey2;
+        maze[e.y][e.x]=e.type;
+      }
+    }
+    // Check if player in line of sight (up to 2 squares)
+    let dxy = [[0,-1],[1,0],[0,1],[-1,0]][e.dir];
+    for (let dist=1;dist<=2;dist++) {
+      let tx=e.x+dxy[0]*dist, ty=e.y+dxy[1]*dist;
+      if (tx===investigationState.px&&ty===investigationState.py) {
+        investigationState.failed = true;
+      }
+      if (maze[ty]?.[tx]===1) break; // wall blocks LOS
+    }
+  }
+  renderMaze(investigationState);
+}
+
+function startInvestigation() {
+  // Maze size scales with level: min 7x7, max 15x15
+  let s = Math.min(15,7+Math.floor(player.level/3));
+  let numThugs = 1 + Math.floor(player.level/4);
+  let numMonsters = 1 + Math.floor(player.level/6);
+  investigationState = makeMaze(s, numThugs, numMonsters);
+  investigationModal.style.display = 'flex';
+  renderMaze(investigationState);
+}
+function closeInvestigation() {
+  investigationModal.style.display = 'none';
+  investigationState = null;
+}
+
+// Keyboard controls
+document.addEventListener('keydown', function(e){
+  if (!investigationState || investigationModal.style.display!=='flex') return;
+  if (['w','a','s','d'].includes(e.key)) {
+    movePlayer(e.key);
+    e.preventDefault();
+  }
+  if (e.key==='Escape') closeInvestigation();
+});
+
+// Button events
+startInvestigationBtn.onclick = startInvestigation;
+closeInvestigationBtn.onclick = closeInvestigation;
 </script>
 </body>
 </html>
