@@ -230,14 +230,28 @@
   </style>
 </head>
 <body>
-  <div id="loading-screen" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#1a1a2e; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999;">
-  <h1 style="margin-bottom:0.4em;">Idle Superhero Game</h1>
-  <p style="margin-bottom:1em; font-size:1.1em;">Assemble your heroes, save the city, and grow stronger while you’re away!</p>
-  <div id="loading-tip" style="margin-bottom:1em; font-style:italic;">Tip: Upgrade your heroes regularly for maximum power!</div>
-  <div style="width:300px; height:20px; background:#222; border-radius:10px; overflow:hidden; margin-bottom:0.5em;">
-    <div id="loading-bar" style="height:100%; width:0; background:#00c3ff; transition:width 0.2s;"></div>
+<!-- Loading Screen Start -->
+<div id="loading-screen" style="width:100vw; height:100vh; background:#181c24; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; position:fixed; top:0; left:0; z-index:9999; font-family:sans-serif;">
+  <!-- Game Name -->
+  <h1 style="font-size:3rem; margin-bottom:0.5em; letter-spacing:2px;">Idle Superhero Game</h1>
+  
+  <!-- Brief Description -->
+  <p style="max-width:500px; text-align:center; margin-bottom:1.5em;">
+    Assemble your team of heroes, upgrade their powers, and save the city in this idle adventure! Choose your path: strategic tycoon or epic story mode.
+  </p>
+  
+  <!-- Loading Bar -->
+  <div style="width:320px; height:22px; background:#333; border-radius:12px; overflow:hidden; margin-bottom:1.2em;">
+    <div id="loading-bar" style="width:0%; height:100%; background:#47c7ff; transition:width 0.4s;"></div>
   </div>
-  <div id="loading-percent">0%</div>
+  <span id="loading-percent" style="margin-bottom:1.2em;">Loading... 0%</span>
+  
+  <!-- Cycling Tips -->
+  <div style="width:320px; min-height:40px; background:#23283b; border-radius:8px; padding:10px 18px; margin-bottom:0.5em; font-size:1.05em;">
+    <span id="tip-text">Tip: Upgrade your heroes to increase their idle power!</span>
+  </div>
+</div>
+<!-- Loading Screen End -->
 </div>
   <main>
     <header>
@@ -1375,36 +1389,39 @@ function softGameReset() {
 // }
 </script>
   <script>
+    // Loading bar simulation
+let percent = 0;
+const loadingBar = document.getElementById('loading-bar');
+const loadingPercent = document.getElementById('loading-percent');
+const loadingScreen = document.getElementById('loading-screen');
+
 const tips = [
-  "Tip: Upgrade your heroes regularly for maximum power!",
-  "Tip: Idle income continues even while you're offline.",
-  "Tip: Complete achievements for extra rewards.",
-  "Tip: Some heroes have special abilities—try them all!",
-  "Tip: Don’t forget to check daily rewards."
+  "Upgrade your heroes to increase their idle power!",
+  "Some heroes have special abilities. Try them in battle!",
+  "Story mode offers unique rewards—don't miss it!",
+  "Collect daily rewards to boost your progress.",
+  "Balance team composition for maximum efficiency."
 ];
+let tipIdx = 0;
 
-let tipIndex = 0;
-function cycleTips() {
-  document.getElementById('loading-tip').textContent = tips[tipIndex];
-  tipIndex = (tipIndex + 1) % tips.length;
-}
-setInterval(cycleTips, 2200); // Switch tips every 2.2 seconds
+// Cycle tips every 2.5 seconds
+setInterval(() => {
+  tipIdx = (tipIdx + 1) % tips.length;
+  document.getElementById('tip-text').textContent = "Tip: " + tips[tipIdx];
+}, 2500);
 
-// Simulate loading progress
-let progress = 0;
-function updateLoading() {
-  progress += Math.random() * 10 + 5; // random increment
-  if (progress > 100) progress = 100;
-  document.getElementById('loading-bar').style.width = progress + '%';
-  document.getElementById('loading-percent').textContent = Math.floor(progress) + '%';
-  if (progress < 100) {
-    setTimeout(updateLoading, 250);
-  } else {
-    setTimeout(() => {
-      document.getElementById('loading-screen').style.display = 'none';
-    }, 600);
+// Simulate loading
+const loadingInterval = setInterval(() => {
+  percent += Math.random() * 7; // Simulate random load steps
+  if (percent > 100) percent = 100;
+  loadingBar.style.width = percent + "%";
+  loadingPercent.textContent = "Loading... " + Math.floor(percent) + "%";
+  if (percent === 100) {
+    clearInterval(loadingInterval);
+    // Hide loading screen after a short delay (replace with actual game start logic)
+    setTimeout(() => { loadingScreen.style.display = 'none'; }, 700);
   }
-}
+}, 200);
 window.addEventListener('DOMContentLoaded', updateLoading);
     // === Investigation Mode Variables ===
 const investigationModal = document.getElementById('investigation-modal');
